@@ -14,7 +14,6 @@ public class URIEntity implements Serializable, Comparable<URIEntity> {
   
   public URIEntity(String id) {
     this.setID(id);
-    this.label = this.localName;
   }
   
   public URIEntity(String id, String label) {
@@ -33,6 +32,8 @@ public class URIEntity implements Serializable, Comparable<URIEntity> {
     try {
       this.id = new URI(id).normalize();
       this.localName = this.extractNameFromId();
+      if(this.label == null)
+        this.label = this.localName;
     } catch (Exception e) {
       System.err.println(id + " Not a URI. Only URIs allowed for IDs");
     }
@@ -57,6 +58,8 @@ public class URIEntity implements Serializable, Comparable<URIEntity> {
 
   public void setLabel(String label) {
     this.label = label;
+    if(label == null)
+      this.label = this.localName;
   }
   
   /*

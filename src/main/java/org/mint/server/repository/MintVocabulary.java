@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import org.mint.server.classes.Region;
 import org.mint.server.classes.graph.VariableGraph;
+import org.mint.server.classes.model.Model;
 import org.mint.server.classes.vocabulary.EventType;
 import org.mint.server.classes.vocabulary.InterventionType;
 import org.mint.server.classes.vocabulary.QuestionTemplate;
@@ -38,4 +39,8 @@ public interface MintVocabulary {
   ArrayList<VariableGraph> getGraphs();
   
   VariableGraph getGraph(String id);
+  
+  ArrayList<Model> getModels();
+  
+  Model getModel(String id);
 }

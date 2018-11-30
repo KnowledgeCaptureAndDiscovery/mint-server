@@ -9,6 +9,12 @@ public class Region extends URIEntity {
   
   ArrayList<Region> subRegions;
   String parentRegion;
+  String placeholder;
+  String image;
+  String description;
+  Float latitude;
+  Float longitude;
+  Integer zoom;
   
   public Region() {
     super();
@@ -54,5 +60,53 @@ public class Region extends URIEntity {
 
   public void setParentRegion(String parentRegion) {
     this.parentRegion = parentRegion;
+  }
+
+  public String getPlaceholder() {
+    return placeholder;
+  }
+
+  public void setPlaceholder(String placeholder) {
+    this.placeholder = placeholder;
+  }
+
+  public String getImage() {
+    return image;
+  }
+
+  public void setImage(String image) {
+    this.image = image;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public Float getLatitude() {
+    return latitude;
+  }
+
+  public void setLatitude(Float latitude) {
+    this.latitude = latitude;
+  }
+
+  public Float getLongitude() {
+    return longitude;
+  }
+
+  public void setLongitude(Float longitude) {
+    this.longitude = longitude;
+  }
+
+  public Integer getZoom() {
+    return zoom;
+  }
+
+  public void setZoom(Integer zoom) {
+    this.zoom = zoom;
   }
 }

@@ -17,7 +17,7 @@ import org.mint.server.repository.impl.MINTRepositoryJSON;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@Path("users/{userid}/tasks/{questionid}")
+@Path("users/{userid}/questions/{questionid}/tasks")
 public class TaskResource {
 
   @Context

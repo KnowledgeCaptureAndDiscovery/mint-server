@@ -11,6 +11,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.mint.server.classes.Region;
 import org.mint.server.classes.graph.VariableGraph;
+import org.mint.server.classes.model.Model;
 import org.mint.server.classes.vocabulary.EventType;
 import org.mint.server.classes.vocabulary.InterventionType;
 import org.mint.server.classes.vocabulary.QuestionTemplate;
@@ -33,7 +34,8 @@ public class MintVocabularyJSON implements MintVocabulary {
   String QUESTIONS_FILE = "question_templates.json";
   String INTERVENTIONS_FILE = "intervention_types.json";
   String WORKFLOWS_FILE = "workflows.json";  
-
+  String MODELS_FILE = "models.json";
+  
   LinkedHashMap<String, Region> regions;
   LinkedHashMap<String, Region> allRegions;
   LinkedHashMap<String, VariableGraph> graphs;
@@ -42,6 +44,7 @@ public class MintVocabularyJSON implements MintVocabulary {
   LinkedHashMap<String, QuestionTemplate> questionTemplates;
   LinkedHashMap<String, TaskType> taskTypes;
   LinkedHashMap<String, WorkflowPointer> workflows;
+  LinkedHashMap<String, Model> models;
   
   ObjectMapper mapper;
 
@@ -62,9 +65,14 @@ public class MintVocabularyJSON implements MintVocabulary {
     questionTemplates = new LinkedHashMap<String, QuestionTemplate>();
     taskTypes = new LinkedHashMap<String, TaskType>();
     workflows = new LinkedHashMap<String, WorkflowPointer>();
+    models = new LinkedHashMap<String, Model>();
     
     setConfiguration();
     load();
+  }
+  
+  public void reload() {
+    this.load();
   }
   
   /* Helper Functions */
@@ -123,7 +131,6 @@ public class MintVocabularyJSON implements MintVocabulary {
           new FileInputStream(this.getFullPath(WORKFLOWS_FILE)), workflowListType);
       this.setWorkflows(workflows);*/
 
-      // TODO: Load Graphs
       this.graphs = new LinkedHashMap<String, VariableGraph>();         
       File graphdir = new File(this.getFullPath(GRAPHS_DIR));
       for(File f : FileUtils.listFiles(graphdir, TrueFileFilter.TRUE, TrueFileFilter.TRUE)) {
@@ -131,6 +138,14 @@ public class MintVocabularyJSON implements MintVocabulary {
             new FileInputStream(f.getAbsolutePath()), VariableGraph.class);
         this.graphs.put(graph.getID(), graph);
       }
+      
+      this.models = new LinkedHashMap<String, Model>();
+      CollectionType modelListType = mapper.getTypeFactory()
+          .constructCollectionType(ArrayList.class, Model.class);   
+      ArrayList<Model> modelList = this.mapper.readValue(
+          new FileInputStream(this.getFullPath(MODELS_FILE)), modelListType);
+      this.setModels(modelList);
+      
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -199,7 +214,21 @@ public class MintVocabularyJSON implements MintVocabulary {
     for(TaskType taskType : taskTypes)
       this.taskTypes.put(taskType.getID(), taskType);
   }
+  
+  public Model getModel(String id) {
+    return this.models.get(id);
+  }
+  
+  public void setModels(ArrayList<Model> models) {
+    for(Model model : models) {
+      this.models.put(model.getID(), model);
+    }
+  }
 
+  public ArrayList<Model> getModels() {
+    return new ArrayList<Model>(models.values());
+  }
+  
   public ArrayList<WorkflowPointer> getWorkflows() {
     return new ArrayList<WorkflowPointer>(workflows.values());
   }

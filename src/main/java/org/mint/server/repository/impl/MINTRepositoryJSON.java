@@ -9,21 +9,28 @@ import java.util.HashMap;
 import java.util.UUID;
 
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
+import org.apache.commons.io.FileUtils;
 import org.mint.server.classes.DataSpecification;
 import org.mint.server.classes.EnsembleSpecification;
 import org.mint.server.classes.InterventionSpecification;
 import org.mint.server.classes.Region;
 import org.mint.server.classes.Task;
+import org.mint.server.classes.graph.Relation;
+import org.mint.server.classes.graph.Variable;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.question.ModelingQuestion;
 import org.mint.server.classes.workflow.ModelGraph;
+import org.mint.server.classes.workflow.TempWorkflowDetails;
 import org.mint.server.classes.workflow.WorkflowTemplate;
+import org.mint.server.planner.MintPlanner;
+import org.mint.server.planner.Workflow;
 import org.mint.server.repository.MintRepository;
 import org.mint.server.repository.MintVocabulary;
 import org.mint.server.util.Config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
+import com.google.common.io.Files;
 
 public class MINTRepositoryJSON implements MintRepository {
   String server, storage, userid;
@@ -70,20 +77,91 @@ public class MINTRepositoryJSON implements MintRepository {
     return prefix + UUID.randomUUID().toString();
   }
   
+  /* Get rest api uris */
   public String getQuestionURI(String questionid) {
     return this.server + "/users/" + this.userid + "/questions/" + questionid;
   }
 
   public String getTaskURI(String questionid, String taskid) {
-    return this.server + "/users/" + this.userid + "/tasks/" + questionid + "/" + taskid;
+    return this.server + "/users/" + this.userid + "/questions/" + questionid + "/tasks/" + taskid;
   }
   
-  private String getQuestionsFile() {
-    return this.storage + File.separator + this.QUESTIONS_FILE;
+  public String getDataSpecificationURI(String questionid, String dsid) {
+    return this.server + "/users/" + this.userid + "/questions/" + questionid + "/data/" + dsid;
+  }
+  
+  public String getGraphURI(String graphid) {
+    return this.server + "/users/" + this.userid + "/graphs/" + graphid;
+  }
+  /* End of Get rest api uris */
+  
+  
+  /* Get paths to files */
+  private String getQuestionDir(String questionid) {
+    return this.storage + File.separator + this.QUESTIONS_DIR + File.separator + questionid;    
   }
 
+  private String getQuestionsFile() {
+    String qfile = this.storage + File.separator + this.QUESTIONS_FILE;
+    String qdir = this.storage + File.separator + this.QUESTIONS_DIR;
+    File f = new File(qfile);
+    File dir = new File(qdir);
+    if(!f.exists()) {
+      try {
+        Files.write("[]".getBytes(), new File(qfile));
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+    if(!dir.exists()) {
+      dir.mkdir();
+    }
+    return qfile;
+  }
+  
+  private String getGraphFile(String graphid) {
+    String graphdir = this.storage + File.separator + "graphs";
+    File dir = new File(graphdir);
+    if(!dir.exists()) {
+      dir.mkdir();
+    }
+    return graphdir + File.separator + graphid + ".json";
+  }
+  
   private String getTasksFile(String questionid) {
-    return this.storage + File.separator + "tasks" + File.separator + questionid + File.separator + "tasks.json";
+    return this.getQuestionDir(questionid) + File.separator + "tasks.json";
+  }
+  
+  private String getDataSpecificationsFile(String questionid) {
+    return this.getQuestionDir(questionid) + File.separator  + "data_specifications.json";
+  }
+
+  private String getHistoryFile(String questionid) {
+    return this.getQuestionDir(questionid) + File.separator + "history.json";
+  }
+  
+  private String getFavoritesFile(String questionid) {
+    return this.getQuestionDir(questionid) + File.separator + "favorites.json";
+  }
+  
+  private String getWorkflowsFile(String questionid) {
+    return this.getQuestionDir(questionid) + File.separator + "workflows.json";
+  }
+  
+  /* End of get paths to files */
+  
+  private void createDirectory(String path) {
+    File f = new File(path);
+    f.mkdir();
+  }
+  
+  private void removeDirectory(String path) {
+    File f = new File(path);
+    try {
+      FileUtils.deleteDirectory(f);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
   
   /* End of Helper Functions */
@@ -148,11 +226,28 @@ public class MINTRepositoryJSON implements MintRepository {
     return null;
   }
   
+  private ArrayList<String> getAllRegionIds(Region region) {
+    ArrayList<String> regionids = new ArrayList<String>();
+    regionids.add(region.getID());
+    if(region.getSubRegions() != null)
+      for(Region subRegion : region.getSubRegions()) 
+        regionids.addAll(this.getAllRegionIds(subRegion));
+
+    return regionids;
+  }
+  
   @Override
   public ArrayList<ModelingQuestion> listModelingQuestions(String regionid) {
+    if(regionid == null) 
+      return this.listAllModelingQuestions();
+    
     ArrayList<ModelingQuestion> filteredList = new ArrayList<ModelingQuestion>();
+    Region region = this.getRegionDetails(regionid);
+    if(region == null)
+      return null;
+    ArrayList<String> regionids = getAllRegionIds(region);
     for(ModelingQuestion question : this.listAllModelingQuestions())
-      if(question.getRegion().equals(regionid))
+      if(regionids.contains(question.getRegion()))
         filteredList.add(question);
     return filteredList;
   }
@@ -165,12 +260,34 @@ public class MINTRepositoryJSON implements MintRepository {
     }
     return null;
   }
+  
+  @Override
+  public void setModelingQuestionGraph(String questionid, String graphid) {
+    ModelingQuestion question = this.getModelingQuestionDetails(questionid);
+    question.setGraph(graphid);
+    this.updateModelingQuestion(question);
+  }
 
   @Override
   public String addModelingQuestion(ModelingQuestion question) {
+    // Add question to list and write to file
     ArrayList<ModelingQuestion> questions = this.listAllModelingQuestions();
     questions.add(question);
     this.writeModelingQuestions(questions);
+    
+    // Create tasks directory for question and initialize files
+    String qname = question.getID().substring(question.getID().lastIndexOf("/")+1);
+    String qdir = this.getQuestionDir(qname);
+    this.createDirectory(qdir);
+    try {
+      Files.write("[]".getBytes(), new File(this.getTasksFile(qname)));
+      Files.write("[]".getBytes(), new File(this.getHistoryFile(qname)));
+      Files.write("[]".getBytes(), new File(this.getFavoritesFile(qname)));
+      Files.write("[]".getBytes(), new File(this.getDataSpecificationsFile(qname)));
+      Files.write("{}".getBytes(), new File(this.getWorkflowsFile(qname)));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
     return question.getID();
   }
 
@@ -180,7 +297,7 @@ public class MINTRepositoryJSON implements MintRepository {
     ArrayList<ModelingQuestion> newquestions = new ArrayList<ModelingQuestion>();
 
     for(ModelingQuestion question : questions) {
-      if(!question.getID().equals(newquestion.getID()))
+      if(question.getID().equals(newquestion.getID()))
         newquestions.add(newquestion);
       else
         newquestions.add(question);
@@ -198,12 +315,24 @@ public class MINTRepositoryJSON implements MintRepository {
         newquestions.add(question);
     }
     this.writeModelingQuestions(newquestions);
+    String qname = questionid.substring(questionid.lastIndexOf("/"));
+    this.removeDirectory(this.getQuestionDir(qname));
   }
 
   /* End of Modeling Questions */
   
   
   /* Start of Variable Graph */
+  
+  private void writeGraph(VariableGraph graph) {
+    String gname = graph.getID().substring(graph.getID().lastIndexOf("/"));
+    try {
+      this.mapper.writerWithDefaultPrettyPrinter().writeValue(
+          new FileOutputStream(this.getGraphFile(gname)), graph);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
   
   @Override
   public VariableGraph getVariableGraph(String graphid) {
@@ -218,20 +347,32 @@ public class MINTRepositoryJSON implements MintRepository {
 
   @Override
   public String addVariableGraph(VariableGraph graph) {
-    // TODO Auto-generated method stub
-    return null;
+    // Rewriting existing id of graph
+    String origid = graph.getID();
+    String randomid = this.getRandomID("graph-");
+    String newid = this.getGraphURI(randomid);
+    graph.setID(newid);
+    for(Variable v : graph.getVariables()) {
+      v.setID(v.getID().replace(origid, newid));
+    }
+    for(Relation l : graph.getLinks()) {
+      l.setFrom(l.getFrom().replace(origid, newid));
+      l.setTo(l.getTo().replace(origid, newid));
+    }
+    // Write the graph
+    this.writeGraph(graph);
+    return graph.getID();
   }
 
   @Override
   public void updateVariableGraph(VariableGraph graph) {
-    // TODO Auto-generated method stub
-    
+    this.writeGraph(graph);
   }
 
   @Override
-  public void deleteVariableGraph(String id) {
-    // TODO Auto-generated method stub
-    
+  public void deleteVariableGraph(String graphid) {
+    String fpath = this.getGraphFile(graphid);
+    new File(fpath).delete();
   }
   
   /* End of Variable Graph */
@@ -307,34 +448,66 @@ public class MINTRepositoryJSON implements MintRepository {
   
   /* Start of Data Specifications */
 
+  private void writeDataSpecifications(ArrayList<DataSpecification> dss, String questionid) {
+    try {
+      this.mapper.writerWithDefaultPrettyPrinter().writeValue(
+          new FileOutputStream(this.getDataSpecificationsFile(questionid)), dss);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+  
   @Override
-  public ArrayList<DataSpecification> listDataSpecifications(String taskid) {
-    // TODO Auto-generated method stub
+  public ArrayList<DataSpecification> listDataSpecifications(String questionid) {
+    CollectionType dsList = mapper.getTypeFactory()
+        .constructCollectionType(ArrayList.class, DataSpecification.class);    
+    try {
+      return this.mapper.readValue(new FileInputStream(this.getDataSpecificationsFile(questionid)), dsList);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
     return null;
   }
 
   @Override
-  public DataSpecification getDataSpecificationDetails(String id) {
-    // TODO Auto-generated method stub
+  public DataSpecification getDataSpecificationDetails(String questionid, String dsid) {
+    for(DataSpecification ds: this.listDataSpecifications(questionid)) {
+      if(ds.getID().equals(dsid))
+        return ds;
+    }
     return null;
   }
 
   @Override
-  public String addDataSpecification(DataSpecification data_specification) {
-    // TODO Auto-generated method stub
-    return null;
+  public String addDataSpecification(String questionid, DataSpecification ds) {
+    ArrayList<DataSpecification> dss = this.listDataSpecifications(questionid);
+    dss.add(ds);
+    this.writeDataSpecifications(dss, questionid);
+    return ds.getID();
   }
 
   @Override
-  public void updateDataSpecification(DataSpecification data_specification) {
-    // TODO Auto-generated method stub
-    
+  public void updateDataSpecification(String questionid, DataSpecification newds) {
+    ArrayList<DataSpecification> dss = this.listDataSpecifications(questionid);
+    ArrayList<DataSpecification> newdss = new ArrayList<DataSpecification>();
+    for(DataSpecification ds : dss) {
+      if(ds.getID().equals(newds.getID()))
+        newdss.add(newds);
+      else
+        newdss.add(newds);
+    }
+    this.writeDataSpecifications(newdss, questionid);
   }
 
   @Override
-  public void deleteDataSpecification(String id) {
-    // TODO Auto-generated method stub
-    
+  public void deleteDataSpecification(String questionid, String dsid) {
+    ArrayList<DataSpecification> dss = this.listDataSpecifications(questionid);
+    ArrayList<DataSpecification> newdss = new ArrayList<DataSpecification>();
+    for(DataSpecification ds : dss) {
+      if(!ds.getID().equals(dsid))
+        newdss.add(ds);
+    }
+    this.writeDataSpecifications(newdss, questionid);
   }
   
   /* End of Data Specifications */
@@ -343,15 +516,13 @@ public class MINTRepositoryJSON implements MintRepository {
   /* Start of Workflow Composition */
   
   @Override
-  public ArrayList<ModelGraph> composeModelGraphs(VariableGraph graph,
-      DataSpecification data_specification) {
-    // TODO Auto-generated method stub
-    return null;
+  public ArrayList<Workflow> composeModelGraphs(VariableGraph graph, DataSpecification ds) {
+    return new MintPlanner().composeModelGraphs(graph, ds, this.vocabulary.getModels());
   }
 
   @Override
-  public ArrayList<WorkflowTemplate> createWorkflows(VariableGraph graph, ModelGraph model_graph,
-      DataSpecification data_specification) {
+  public ArrayList<WorkflowTemplate> createWorkflows(VariableGraph graph, 
+      ModelGraph model_graph, DataSpecification ds) {
     // TODO Auto-generated method stub
     return null;
   }
@@ -462,5 +633,25 @@ public class MINTRepositoryJSON implements MintRepository {
     return this.vocabulary;
   }
   
+  /* Temporary APIs */
+  public String saveWorkflow(String questionid, TempWorkflowDetails wflow) {
+    try {
+      this.mapper.writerWithDefaultPrettyPrinter().writeValue(
+          new FileOutputStream(this.getWorkflowsFile(questionid)), wflow);
+      return "OK";
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
   
+  public TempWorkflowDetails getWorkflow(String questionid) {    
+    try {
+      return this.mapper.readValue(new FileInputStream(this.getWorkflowsFile(questionid)), 
+          TempWorkflowDetails.class);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
 }

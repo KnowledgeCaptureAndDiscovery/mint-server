@@ -4,8 +4,8 @@ import java.util.Date;
 
 public class TemplateTimePeriod {
 
-  public Date fromDate;
-  public Date toDate;
+  Date fromDate;
+  Date toDate;
 
   public Date getFromDate() {
     return fromDate;

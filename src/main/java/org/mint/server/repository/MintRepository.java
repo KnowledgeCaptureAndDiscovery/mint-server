@@ -11,6 +11,7 @@ import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.question.ModelingQuestion;
 import org.mint.server.classes.workflow.ModelGraph;
 import org.mint.server.classes.workflow.WorkflowTemplate;
+import org.mint.server.planner.Workflow;
 
 public interface MintRepository {
   // Vocabulary
@@ -27,6 +28,7 @@ public interface MintRepository {
   public ArrayList<ModelingQuestion> listAllModelingQuestions();
   public ArrayList<ModelingQuestion> listModelingQuestions(String regionid);
   public ModelingQuestion getModelingQuestionDetails(String questionid);
+  public void setModelingQuestionGraph(String questionid, String graphid);
   public String addModelingQuestion(ModelingQuestion question);
   public void updateModelingQuestion(ModelingQuestion question);
   public void deleteModelingQuestion(String questionid);
@@ -46,13 +48,13 @@ public interface MintRepository {
   
   // DataSpecification
   public ArrayList<DataSpecification> listDataSpecifications(String questionid);
-  public DataSpecification getDataSpecificationDetails(String dsid);
-  public String addDataSpecification(DataSpecification data_specification);
-  public void updateDataSpecification(DataSpecification data_specification);
-  public void deleteDataSpecification(String id);
+  public DataSpecification getDataSpecificationDetails(String questionid, String dsid);
+  public String addDataSpecification(String questionid, DataSpecification data_specification);
+  public void updateDataSpecification(String questionid, DataSpecification data_specification);
+  public void deleteDataSpecification(String questionid, String dsid);
   
   // Workflow Composition / Planning
-  public ArrayList<ModelGraph> composeModelGraphs(VariableGraph graph, 
+  public ArrayList<Workflow> composeModelGraphs(VariableGraph graph, 
       DataSpecification data_specification);
   public ArrayList<WorkflowTemplate> createWorkflows(VariableGraph graph, ModelGraph model_graph, 
       DataSpecification data_specification);

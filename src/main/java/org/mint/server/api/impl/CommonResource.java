@@ -14,6 +14,7 @@ import org.mint.server.classes.Region;
 import org.mint.server.classes.URIEntity;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.vocabulary.EventType;
+import org.mint.server.classes.vocabulary.InterventionType;
 import org.mint.server.classes.vocabulary.QuestionTemplate;
 import org.mint.server.classes.vocabulary.TaskType;
 import org.mint.server.repository.MintRepository;
@@ -25,6 +26,13 @@ public class CommonResource {
   
   @Context
   HttpServletRequest request;
+  
+  @GET
+  @Path("reload")
+  public String reload() {
+    MintVocabularyJSON.get().reload();
+    return "OK";
+  }
   
   @GET
   @Path("regions")
@@ -92,6 +100,13 @@ public class CommonResource {
   @Produces("application/json")
   public List<EventType> listEventTypes() {
     return MintVocabularyJSON.get().getEventTypes();
+  }
+  
+  @GET
+  @Path("intervention_types")
+  @Produces("application/json")
+  public List<InterventionType> listInterventionTypes() {
+    return MintVocabularyJSON.get().getInterventionTypes();
   }
   
   @GET
