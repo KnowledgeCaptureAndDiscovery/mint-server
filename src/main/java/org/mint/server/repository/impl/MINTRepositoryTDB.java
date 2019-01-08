@@ -1,5 +1,6 @@
 package org.mint.server.repository.impl;
 
+/*
 import java.io.File;
 import java.util.HashMap;
 
@@ -12,8 +13,11 @@ import edu.isi.kcap.ontapi.KBObject;
 import edu.isi.kcap.ontapi.OntFactory;
 import edu.isi.kcap.ontapi.OntSpec;
 import edu.isi.kcap.ontapi.jena.transactions.TransactionsJena;
+*/
 
-public class MINTRepositoryTDB extends TransactionsJena {
+public class MINTRepositoryTDB {
+  /*
+  extends TransactionsJena {
   KBAPI ontkb;
   
   String tdbdir;
@@ -121,5 +125,5 @@ public class MINTRepositoryTDB extends TransactionsJena {
     owlns = KBConstants.OWLNS();
     rdfns = KBConstants.RDFNS();
     rdfsns = KBConstants.RDFSNS();
-  }
+  }*/
 }

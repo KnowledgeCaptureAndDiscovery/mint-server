@@ -1,29 +1,34 @@
 package org.mint.server.classes.graph;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import org.mint.server.classes.URIEntity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class Variable extends URIEntity {
+public class GVariable extends URIEntity {
   private static final long serialVersionUID = -1065248491858616282L;
   
   String canonical_name;
   ArrayList<String> standard_names;
   GraphPosition position;
   String category;
+  boolean added;
   
-  @JsonIgnore
-  HashMap<String, VariableProvenance> provenance;
+  //@JsonIgnore
+  ArrayList<VariableProvenance> provenance;
   
   VariableProvider provider;
   boolean resolved;
 
-  public Variable() {
-    this.provenance = new HashMap<String, VariableProvenance>();
+  public GVariable() {
+    this.provenance = new ArrayList<VariableProvenance>();
   }
+  
+  public GVariable(GVariable gvar) {
+    this.copyFrom(gvar);
+  }
+  
   public String getCanonical_name() {
     return canonical_name;
   }
@@ -48,10 +53,10 @@ public class Variable extends URIEntity {
   public void setCategory(String category) {
     this.category = category;
   }
-  public HashMap<String, VariableProvenance> getProvenance() {
+  public ArrayList<VariableProvenance> getProvenance() {
     return provenance;
   }
-  public void setProvenance(HashMap<String, VariableProvenance> provenance) {
+  public void setProvenance(ArrayList<VariableProvenance> provenance) {
     this.provenance = provenance;
   }
   public VariableProvider getProvider() {
@@ -66,12 +71,46 @@ public class Variable extends URIEntity {
   public void setResolved(boolean resolved) {
     this.resolved = resolved;
   }
-  public void copyFrom(Variable v) {
+  public boolean isAdded() {
+    return added;
+  }
+
+  public void setAdded(boolean added) {
+    this.added = added;
+  }
+
+  public void copyFrom(GVariable v) {
     this.setID(v.getID());
     this.setLabel(v.getLabel());
     this.setPosition(v.getPosition());
+    this.setCategory(v.getCategory());
+    this.setProvider(v.getProvider());
+    this.setResolved(v.isResolved());
     this.setStandard_names(v.getStandard_names());
     this.setCanonical_name(v.getCanonical_name());
+    this.setProvenance(new ArrayList<VariableProvenance>(v.getProvenance()));
   }
   
+  public String getMatchingFileName(String modelid, ArrayList<String> vars, boolean isinput) {
+    for(VariableProvenance prov : this.provenance) {
+      if(prov.getModel().equals(modelid) && prov.isinput == isinput) {
+        for(String varname : vars) {
+          if(varname.equals(prov.getFileName())) {
+            return prov.getFileName();
+          }
+        }
+      }
+    }
+    return null;
+  }
+  
+  public VariableProvenance getMatchingProvenanceItem(String modelid, String filename) {
+    for(VariableProvenance prov : this.provenance) {
+      if(prov.getModel().equals(modelid)) {
+        if(prov.getFileName().equals(filename))
+          return prov; 
+      }
+    }
+    return null;
+  }
 }

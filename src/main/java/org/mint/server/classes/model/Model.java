@@ -7,24 +7,37 @@ import org.mint.server.classes.URIEntity;
 public class Model extends URIEntity {
   private static final long serialVersionUID = -2859278726136789000L;
 
-  String category;
+  String version;
+  ModelType type;
+  
   ArrayList<ModelIO> inputs;
   ArrayList<ModelIO> outputs;
   
   public void copyFrom(Model model) {
     this.setID(model.getID());
     this.setLabel(model.getLabel());
-    this.category = model.getCategory();
+    this.setVersion(model.getVersion());
+    this.setType(model.getType());
     this.inputs = new ArrayList<ModelIO>(model.getInputs());
     this.outputs = new ArrayList<ModelIO>(model.getOutputs());
   }
-  
-  public String getCategory() {
-    return category;
+
+  public String getVersion() {
+    return version;
   }
-  public void setCategory(String category) {
-    this.category = category;
+
+  public void setVersion(String version) {
+    this.version = version;
   }
+
+  public ModelType getType() {
+    return type;
+  }
+
+  public void setType(ModelType type) {
+    this.type = type;
+  }
+
   public ArrayList<ModelIO> getInputs() {
     return inputs;
   }

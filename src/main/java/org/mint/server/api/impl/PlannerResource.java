@@ -12,7 +12,7 @@ import javax.ws.rs.core.Context;
 import org.mint.server.classes.DataSpecification;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.question.ModelingQuestion;
-import org.mint.server.planner.Workflow;
+import org.mint.server.planner.WorkflowSolution;
 import org.mint.server.repository.impl.MINTRepositoryJSON;
 
 
@@ -28,7 +28,7 @@ public class PlannerResource {
   @GET
   @Path("compose/{dsid}")
   @Produces("application/json")
-  public ArrayList<Workflow> composeModelGraphs(@PathParam("dsid") String dsid) {
+  public ArrayList<WorkflowSolution> createWorkflowSolutions(@PathParam("dsid") String dsid) {
     MINTRepositoryJSON repo = MINTRepositoryJSON.get(userid);
     String quri = repo.getQuestionURI(questionid);
     ModelingQuestion question = repo.getModelingQuestionDetails(quri);
@@ -36,6 +36,6 @@ public class PlannerResource {
     VariableGraph graph = repo.getVariableGraph(graphname);
     String dsuri = repo.getDataSpecificationURI(questionid, dsid);
     DataSpecification ds = repo.getDataSpecificationDetails(questionid, dsuri);
-    return repo.composeModelGraphs(graph, ds);
+    return repo.createWorkflowSolutions(graph, ds);
   }
 }

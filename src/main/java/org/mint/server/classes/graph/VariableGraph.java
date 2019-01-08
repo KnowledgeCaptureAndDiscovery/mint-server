@@ -7,20 +7,20 @@ import org.mint.server.classes.URIEntity;
 public class VariableGraph extends URIEntity {
   private static final long serialVersionUID = 2981002663856220836L;
   
-  ArrayList<Variable> variables;
+  ArrayList<GVariable> variables;
   ArrayList<Relation> links;
   
   public VariableGraph() {
     super();
-    variables = new ArrayList<Variable>();
+    variables = new ArrayList<GVariable>();
     links = new ArrayList<Relation>();
   }
 
-  public ArrayList<Variable> getVariables() {
+  public ArrayList<GVariable> getVariables() {
     return variables;
   }
 
-  public void setVariables(ArrayList<Variable> variables) {
+  public void setVariables(ArrayList<GVariable> variables) {
     this.variables = variables;
   }
 

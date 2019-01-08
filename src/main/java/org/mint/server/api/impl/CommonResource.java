@@ -10,9 +10,12 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 
+import org.mint.server.classes.Dataset;
 import org.mint.server.classes.Region;
+import org.mint.server.classes.StandardName;
 import org.mint.server.classes.URIEntity;
 import org.mint.server.classes.graph.VariableGraph;
+import org.mint.server.classes.model.Model;
 import org.mint.server.classes.vocabulary.EventType;
 import org.mint.server.classes.vocabulary.InterventionType;
 import org.mint.server.classes.vocabulary.QuestionTemplate;
@@ -115,5 +118,26 @@ public class CommonResource {
   public EventType getEventTypes(@PathParam("event_type") String typeid) {
     typeid = request.getRequestURL().toString();
     return MintVocabularyJSON.get().getEventType(typeid);
+  }
+  
+  @GET
+  @Path("models")
+  @Produces("application/json")
+  public List<Model> getModels() {
+    return MintVocabularyJSON.get().getModels();
+  }
+  
+  @GET
+  @Path("standard_names")
+  @Produces("application/json")
+  public List<StandardName> getStandardNames() {
+    return MintVocabularyJSON.get().getStandardNames();
+  }
+  
+  @GET
+  @Path("datasets")
+  @Produces("application/json")
+  public List<Dataset> getDatasets() {
+    return MintVocabularyJSON.get().getDatasets();
   }
 }

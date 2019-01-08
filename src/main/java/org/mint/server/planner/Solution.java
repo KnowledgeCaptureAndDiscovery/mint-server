@@ -2,60 +2,73 @@ package org.mint.server.planner;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.mint.server.classes.graph.GraphPosition;
-import org.mint.server.classes.graph.Variable;
+import org.mint.server.classes.graph.Relation;
+import org.apache.commons.configuration.plist.PropertyListConfiguration;
+import org.mint.server.classes.graph.GVariable;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.graph.VariableProvenance;
 import org.mint.server.classes.graph.VariableProvider;
+import org.mint.server.classes.graph.VariableProvider.Type;
 import org.mint.server.classes.model.Model;
 import org.mint.server.classes.model.ModelIO;
 import org.mint.server.classes.model.ModelVariable;
+import org.mint.server.util.Config;
+import org.mint.server.classes.wings.Binding;
+import org.mint.server.classes.wings.ComponentVariable;
+import org.mint.server.classes.wings.Link;
+import org.mint.server.classes.wings.Node;
+import org.mint.server.classes.wings.Port;
+import org.mint.server.classes.wings.Role;
+import org.mint.server.classes.wings.Variable;
+import org.mint.server.classes.wings.Workflow;
+import org.mint.server.repository.impl.MintVocabularyJSON;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class Solution {
+public class Solution implements Comparable<Solution> {
   
-  ArrayList<Variable> variables;
+  ArrayList<GVariable> variables;
   ArrayList<Model> models;
+  MintVocabularyJSON vocabulary = MintVocabularyJSON.get();
   
   @JsonIgnore
-  HashMap<String, Variable> varhash;
+  HashMap<String, GVariable> varhash;
   
-  public Solution(ArrayList<Variable> variables) {
-    this.variables = new ArrayList<Variable>();
-    this.varhash = new HashMap<String, Variable>();
-    for (Variable v : variables) {
+  public Solution(ArrayList<GVariable> variables) {
+    this.variables = new ArrayList<GVariable>();
+    this.varhash = new HashMap<String, GVariable>();
+    for (GVariable v : variables) {
       // Copy graph variable
-      Variable nv = new Variable();
-      nv.copyFrom(v);
+      GVariable nv = new GVariable(v);
       this.variables.add(nv);
       this.varhash.put(nv.getCanonical_name(), nv);
-      v.setProvenance(new HashMap<String, VariableProvenance>());
+      v.setProvenance(new ArrayList<VariableProvenance>());
     }
     this.models = new ArrayList<Model>();
   }
 
   public void copy(Solution solution) {
-    this.variables = new ArrayList<Variable>();
-    this.varhash = new HashMap<String, Variable>();
+    this.variables = new ArrayList<GVariable>();
+    this.varhash = new HashMap<String, GVariable>();
 
-    for (Variable v : solution.getVariables()) {
+    for (GVariable v : solution.getVariables()) {
       // Deep copy solution variable
-      Variable nv = new Variable();
-      nv.copyFrom(v);
+      GVariable nv = new GVariable(v);
       this.variables.add(nv);
       this.varhash.put(nv.getCanonical_name(), nv);
     }
     this.models = new ArrayList<Model>(solution.getModels());
   }
 
-  public ArrayList<Variable> getVariables() {
+  public ArrayList<GVariable> getVariables() {
     return variables;
   }
 
-  public void setVariables(ArrayList<Variable> variables) {
+  public void setVariables(ArrayList<GVariable> variables) {
     this.variables = variables;
   }
 
@@ -67,33 +80,41 @@ public class Solution {
     this.models = models;
   }
 
-  public HashMap<String, Variable> getVarhash() {
+  public HashMap<String, GVariable> getVarhash() {
     return varhash;
   }
 
-  public void setVarhash(HashMap<String, Variable> varhash) {
+  public void setVarhash(HashMap<String, GVariable> varhash) {
     this.varhash = varhash;
   }
   
-  public ArrayList<Variable> addModel(Model model) {
+  @Override
+  public String toString() {
+    return this.models.toString();
+  }
+  
+  public ArrayList<GVariable> addModel(Model model, String graphid) {
     Model c = new Model();
     c.copyFrom(model);
     this.models.add(c);
     
-    ArrayList<Variable> newvars = new ArrayList<Variable>();
+    ArrayList<GVariable> newvars = new ArrayList<GVariable>();
     for (ModelIO ip : c.getInputs()) {
       for(ModelVariable v : ip.getVariables()) {
-        String hashid = v.getCanonical_name();
+        String hashid = this.vocabulary.getCanonicalName(v.getStandard_name());
         if(this.varhash.containsKey(hashid)) {
+          GVariable gvar = this.varhash.get(hashid);
           VariableProvenance prov = new VariableProvenance(c.getID(), ip.getID(), v.getMetadata(), true);
-          HashMap<String, VariableProvenance> provmap = this.varhash.get(hashid).getProvenance();
-          if(provmap == null)
-            provmap = new HashMap<String, VariableProvenance>();
-          provmap.put(c.getID(), prov);
-          this.varhash.get(hashid).setProvenance(provmap);
+          ArrayList<VariableProvenance> provlist = gvar.getProvenance();
+          if(provlist == null)
+            provlist = new ArrayList<VariableProvenance>();
+          provlist.add(prov);
+          gvar.setProvenance(provlist);
         }
         else {
-          Variable newv = this.createNewVariable(v, c, ip, true);
+          GVariable newv = this.createNewVariable(v, c, ip, true, graphid);
+          this.varhash.put(hashid, newv);
+          this.variables.add(newv);
           newvars.add(newv);
         }
       }
@@ -101,44 +122,48 @@ public class Solution {
     
     for (ModelIO op : c.getOutputs()) {
       for(ModelVariable v : op.getVariables()) {
-        String hashid = v.getCanonical_name();
-        Variable newv;
+        String hashid = this.vocabulary.getCanonicalName(v.getStandard_name());
+        GVariable newv;
         if(this.varhash.containsKey(hashid)) {
           VariableProvenance prov = new VariableProvenance(c.getID(), op.getID(), v.getMetadata(), false);
           newv = this.varhash.get(hashid);
-          HashMap<String, VariableProvenance> provmap = newv.getProvenance();
-          if(provmap == null)
-            provmap = new HashMap<String, VariableProvenance>();
-          provmap.put(c.getID(), prov);
-          newv.setProvenance(provmap);
+          ArrayList<VariableProvenance> provlist = newv.getProvenance();
+          if(provlist == null)
+            provlist = new ArrayList<VariableProvenance>();
+          provlist.add(prov);
+          newv.setProvenance(provlist);
         }
         else {
-          newv = this.createNewVariable(v, c, op, true);
+          newv = this.createNewVariable(v, c, op, false, graphid);
+          this.varhash.put(hashid, newv);
+          this.variables.add(newv);
           newvars.add(newv);
         }
         
-        VariableProvider provider = new VariableProvider(c.getID(), VariableProvider.Type.MODEL, c.getCategory());
+        VariableProvider provider = new VariableProvider(c.getID(), VariableProvider.Type.MODEL, 
+            this.getModelCategory(c));
         newv.setResolved(true);
         newv.setProvider(provider);
       }
     }
 
-    // System.out.println(" - Adding "+c.id+" created "+newvars.length+" new variables");
+    // System.out.println(" - Adding "+c.getLabel()+" created "+newvars.size()+" new variables");
     // System.out.println(newvars);
-    for(Variable v : newvars) {
-      String hashid = v.getCanonical_name();
-      this.varhash.put(hashid, v);
-      this.variables.add(v);
-    }
     return newvars;
   }
+  
+  private String getModelCategory(Model c) {
+    if(c.getType() != null)
+      return c.getType().getCategory();
+    return null;
+  }
 
-  private Variable getVariableFromModelVariable(String vid, ModelVariable v, 
-      HashMap<String, VariableProvenance> provenance) {
-    Variable newv = new Variable();
+  private GVariable getVariableFromModelVariable(String vid, ModelVariable v, 
+      ArrayList<VariableProvenance> provenance) {
+    GVariable newv = new GVariable();
     ArrayList<String> snames = new ArrayList<String>();
     snames.add(v.getStandard_name());
-    String cname = v.getCanonical_name();
+    String cname = this.vocabulary.getCanonicalName(v.getStandard_name());
     if(cname == null)
       cname = v.getStandard_name();
     
@@ -149,23 +174,23 @@ public class Solution {
     newv.setLabel(v.getLabel());
     newv.setStandard_names(snames);
     newv.setCanonical_name(cname);
-    newv.setProvenance(provenance);
     newv.setLabel(v.getLabel());
     newv.setPosition(pos);
+    newv.setProvenance(new ArrayList<VariableProvenance>(provenance));
     return newv;
   }
   
-  public Variable createNewVariable(ModelVariable v, 
-      Model c, ModelIO f, boolean isinput) {
+  public GVariable createNewVariable(ModelVariable v, 
+      Model c, ModelIO f, boolean isinput, String graphid) {
     // Create new variable
-    String vid = "v_" + UUID.randomUUID().toString().substring(2, 9);
-    HashMap<String, VariableProvenance> provenance = new HashMap<String, VariableProvenance>();
-    provenance.put(c.getID(), new VariableProvenance(c.getID(), f.getID(), v.getMetadata(), isinput));
+    String vid = graphid + "#" + v.getLocalName();
+    ArrayList<VariableProvenance> provenance = new ArrayList<VariableProvenance>();
+    provenance.add(new VariableProvenance(c.getID(), f.getID(), v.getMetadata(), isinput));
     return this.getVariableFromModelVariable(vid, v, provenance);
   }
 
-  public Workflow createWorkflow(VariableGraph graph, MintPlanner clib) {
-    Workflow workflow = new Workflow();
+  public WorkflowSolution createWorkflow(VariableGraph graph, MintPlanner clib) {
+    WorkflowSolution workflow = new WorkflowSolution();
     workflow.setID(graph.getID());
     workflow.setModels(this.models);
     workflow.setVariables(this.variables);
@@ -177,14 +202,16 @@ public class Solution {
     for(Model c : this.models) {
       for(ModelIO ip : c.getInputs()) {
         for(ModelVariable mv : ip.getVariables()) {
-          String hashid = mv.getCanonical_name();
-          Variable v = this.varhash.get(hashid);
+          String hashid = this.vocabulary.getCanonicalName(mv.getStandard_name());
+          GVariable v = this.varhash.get(hashid);
           if(v == null || !v.isResolved() || v.getProvider() == null) {
             System.out.println("problem with " + c.getID() + " (" + hashid + ")");
             return null;
           }
           WorkflowLink link = 
               new WorkflowLink(v.getProvider().getID(), c.getID(), v.getID(), v.getProvider().getType());
+          if(v.getProvider().getType() == Type.DATA)
+            link.setFrom(null);
           links.add(link);
           varlinks.put(v.getID(), true);
         }
@@ -194,8 +221,8 @@ public class Solution {
     for(Model c : this.models) {
       for(ModelIO op : c.getOutputs()) {
         for(ModelVariable mv : op.getVariables()) {
-          String hashid = mv.getCanonical_name();
-          Variable v = this.varhash.get(hashid);
+          String hashid = this.vocabulary.getCanonicalName(mv.getStandard_name());
+          GVariable v = this.varhash.get(hashid);
           if(v == null)
             return null;
           
@@ -212,437 +239,340 @@ public class Solution {
     
     workflow.setLinks(links);
     return workflow;
-    /*
-
-    workflow.model_graph = this.createModelGraph(workflow);
-    workflow.wings_workflow = this.createWingsWorkflow(workflow, clib);
-    workflow.graph = this.createGraph(workflow);
-    workflow.graph = this.diffGraph(workflow.graph, graph);
-
-    // Do a diff between original graph and new graph
-    return workflow;
-    */
+  }
+  
+  @Override
+  public int hashCode() {
+    return (this.models.toString()+this.variables.toString()).hashCode();
+  }
+  
+  @Override
+  public int compareTo(Solution o) {
+    return Integer.compare(this.hashCode(), o.hashCode());
   }
 
-  /*
-  diffGraph(newgraph, oldgraph) {
-    var linkhash = {};
-    var varhash = {};
-    for(var i=0; i<oldgraph.variables.length; i++) {
-      var v = oldgraph.variables[i];
-      varhash[v.id] = true;
-    }
-    for(var i=0; i<oldgraph.links.length; i++) {
-      var l = oldgraph.links[i];
-      linkhash[l.from + "-" + l.to] = true;
-    }
-    // Annotate new graph
-    for(var i=0; i<newgraph.variables.length; i++) {
-      var v = newgraph.variables[i];
-      if(!varhash[v.id])
-        newgraph.variables[i].new = true;
-    }
-    for(var i=0; i<newgraph.links.length; i++) {
-      var l = newgraph.links[i];
-      if(!linkhash[l.from + "-" + l.to])
-        newgraph.links[i].new = true;
-    }
-    return newgraph;
+  private String getRandomID(String prefix) {
+    return prefix + "-" + UUID.randomUUID().toString().substring(0, 8);
   }
-
-  createGraph(wflow) {
+  
+  public Workflow createModelGraph(WorkflowSolution wflow, String userid) {
     if(wflow == null)
       return null;
-    var graph = {
-      id: wflow.id,
-      label: wflow.id,
-      variables: [],
-      links: []
-    }
-    var gvars = wflow.model_graph.template.Variables;
+    
+    PropertyListConfiguration props = Config.get().getProperties();
+    String wingsServer = props.getString("wings.server");
+    String wingsDomain = props.getString("wings.domain");
+    String basePath = wingsServer + "/export/users/" + userid + "/" + wingsDomain;
 
-    var varid_hash = {};
-    var cname_hash = {};
-    for(var i=0; i<wflow.variables.length; i++) {
-      var v = wflow.variables[i];
-      if(!v.resolved)
+    String wflowName = this.getRandomID("workflow");
+    String wflowNs = basePath + "/workflows/" + wflowName + ".owl#";
+    String wflowId = wflowNs + wflowName;
+    String clibNs = basePath + "/components/library.owl#";
+    
+    Workflow tpl = new Workflow(wflowId);
+
+    HashMap<String, Variable> varid_hash = new HashMap<String, Variable>();
+    HashMap<String, GVariable> gvarid_hash = new HashMap<String, GVariable>();
+    HashMap<String, Port> port_hash = new HashMap<String, Port>();
+    HashMap<String, Node> node_hash = new HashMap<String, Node>();
+    
+    for(GVariable v : wflow.variables) {
+      if(!v.isResolved())
         continue;
-      var gvar = gvars[v.id];
-      var vcat = gvar.category;
-      var nv = {
-        id: v.id, label: v.label, category: vcat,
-        standard_name: v.standard_name,
-        canonical_name: v.canonical_name,
-        position: v.position
-      }
-      cname_hash[nv.canonical_name] = nv;
-      varid_hash[nv.id] = nv;
-      graph.variables.push(nv);
+      String varName = v.getLocalName();
+      String varId = wflowNs + varName;
+      Variable var = new Variable(varId, 1);
+      var.setName(v.getLabel());
+      tpl.addVariable(var);
+      gvarid_hash.put(v.getID(), v);
+      varid_hash.put(v.getID(), var);
     }
-
-    var compid_hash = {};
-    for(var i=0; i<wflow.models.length; i++) {
-      var c = wflow.models[i];
-      compid_hash[c.id] = c;
-    }
-
-    for(var i=0; i<wflow.links.length; i++) {
-      var l = wflow.links[i];
-      var v = varid_hash[l.variable];
-      if(l.from && l.type != "data") {
-        var c = compid_hash[l.from];
-        for(var j=0; j<c.inputs.length; j++) {
-          var ip = c.inputs[j];
-          for(var k=0; k<ip.variables.length; k++) {
-            var fromvar = cname_hash[ip.variables[k].canonical_name];
-            graph.links.push({from: fromvar.id, to: v.id});
-            if(!fromvar.category)
-              fromvar.category = c.category;
-          }
+    
+    for(Model c : wflow.getModels()) {
+      String cvarName = c.getLocalName(); //this.getRandomID(c.getLocalName());
+      /*if(c.getLabel() != null)
+        cvarName = c.getLabel().replaceAll("\\s+", "_");*/
+      String cvarId = wflowNs + cvarName;
+      ComponentVariable cvar = new ComponentVariable(cvarId);
+      String cId = clibNs + cvarName;
+      Binding b = new Binding(cId);
+      cvar.setBinding(b);
+      //cvar.setLabel(c.getLabel());
+      Node node = new Node(cvarId+"_node");
+      node.setComponentVariable(cvar);
+      node.setCategory(this.getModelCategory(c));
+      tpl.addNode(node);
+      
+      for(ModelIO ip : c.getInputs()) {
+        for(ModelVariable mv : ip.getVariables()) {
+          String roleid = this.vocabulary.getCanonicalName(mv.getStandard_name());
+          String portid =  node.getId() + "_in_" + roleid;
+          Port port = new Port(portid);
+          Role role = new Role(portid + "_role", 1);
+          role.setRoleid(roleid);
+          port.setRole(role);
+          node.addInputPort(port);
+          port_hash.put(portid, port);
         }
-        if(!v.category)
-          v.category = c.category;
       }
-      if(l.to) {
-        var c = compid_hash[l.to];
-        for(var j=0; j<c.outputs.length; j++) {
-          var op = c.outputs[j];
-          for(var k=0; k<op.variables.length; k++) {
-            var vname = op.variables[k].canonical_name;
-            var tovar = cname_hash[vname];
-            graph.links.push({from: v.id, to: tovar.id});
-            if(!tovar.category)
-              tovar.category = c.category;
-          }
+      for(ModelIO op : c.getOutputs()) {
+        for(ModelVariable mv : op.getVariables()) {
+          String roleid = this.vocabulary.getCanonicalName(mv.getStandard_name());
+          String portid = node.getId() + "_out_" + roleid;
+          Port port = new Port(portid);
+          Role role = new Role(portid + "_role", 1);
+          role.setRoleid(roleid);
+          port.setRole(role);
+          node.addOutputPort(port);
+          port_hash.put(portid, port);
         }
-        if(!v.category)
-          v.category = c.category;
+      }
+      tpl.addNode(node);
+      node_hash.put(c.getID(), node);
+    }
+    
+    for(WorkflowLink l : wflow.getLinks()) {
+      Variable var = varid_hash.get(l.getVariable());
+      GVariable v = gvarid_hash.get(l.getVariable());
+      if(l.getType() == Type.DATA) {
+        String roleid = v.getCanonical_name();
+        Node node = node_hash.get(l.getTo());
+        String portid = node.getId() + "_in_" + roleid;
+        String linkid = portid + "_to";
+        Port port = port_hash.get(portid);
+        Link link = new Link(linkid, null, null, node.getId(), port.getId(), var.getId());
+        if(node.getCategory() != null)
+          var.setCategory(node.getCategory());
+        tpl.addLink(link);
+      }
+      else if(l.getType() == Type.OUTPUT) {
+        String roleid = v.getCanonical_name();
+        Node node = node_hash.get(l.getFrom());
+        String portid = node.getId() + "_out_" + roleid;
+        String linkid = portid + "_from";
+        Port port = port_hash.get(portid);
+        Link link = new Link(linkid, node.getId(), port.getId(), null, null, var.getId());
+        if(var.getCategory() == null && node.getCategory() != null)
+          var.setCategory(node.getCategory());
+        tpl.addLink(link);
+      }
+      else if(l.getType() == Type.MODEL) {
+        String roleid = v.getCanonical_name();
+        Node fromNode = node_hash.get(l.getFrom());
+        Node toNode = node_hash.get(l.getTo());
+        Port fromPort = port_hash.get(fromNode.getId() + "_out_" + roleid);
+        Port toPort = port_hash.get(toNode.getId() + "_in_" + roleid);
+        String linkid = fromPort.getId() + "_to_" + toNode.getLocalName() + "_in_" + roleid;
+        Link link = new Link(linkid, fromNode.getId(), fromPort.getId(), 
+            toNode.getId(), toPort.getId(), var.getId());
+
+        if(var.getCategory() == null && fromNode != null && fromNode.getCategory() != null)
+          var.setCategory(fromNode.getCategory());
+        else if(var.getCategory() == null && toNode != null && toNode.getCategory() != null)
+          var.setCategory(toNode.getCategory());
+
+        tpl.addLink(link);
       }
     }
-    return graph;
+    
+    return tpl;
   }
-
-  createModelGraph(wflow) {
-    if(wflow == null)
-      return null;
-    var wingsw = {
-      template: {
-        version: 0,
-        Nodes: {},
-        Links: {},
-        Variables: {}
-      }
-    }
-    var tpl = wingsw.template;
-    var varid_hash = {};
-    var cname_hash = {};
-    for(var i=0; i<wflow.variables.length; i++) {
-      var v = wflow.variables[i];
-      if(!v.resolved)
-        continue;
-      cname_hash[v.canonical_name] = v;
-      varid_hash[v.id] = v;
-      tpl.Variables[v.id] = {
-        id: v.id,
-        name: v.label,
-        type: 1 //FIXME: use category here
-      }
-    }
-    for(var i=0; i<wflow.models.length; i++) {
-      var c = wflow.models[i];
-      var nodeid = c.id;
-      var node = {
-        id: nodeid,
-        name: c.label,
-        inputPorts: {},
-        outputPorts: {},
-        category: c.category,
-        componentVariable: {
-          binding: {
-            id: c.label,
-            type: "uri"
-          },
-          id: "model_" + c.id
-        }
-      }
-      for(var j=0; j<c.inputs.length; j++) {
-        var ip = c.inputs[j];
-        for(var k=0; k<ip.variables.length; k++) {
-          var roleid = ip.variables[k].canonical_name; // Standard name
-          var portid = "inport_" + roleid;
-          node.inputPorts[portid] = {
-            id: portid,
-            role: {
-              type: 1,
-              roleid: roleid
-            }
-          }
-        }
-      }
-      for(var j=0; j<c.outputs.length; j++) {
-        var op = c.outputs[j];
-        for(var k=0; k<op.variables.length; k++) {
-          var roleid = op.variables[k].canonical_name; // Standard name
-          var portid = "outport_" + roleid;
-          node.outputPorts[portid] = {
-            id: portid,
-            role: {
-              type: 1,
-              roleid: roleid
-            }
-          }
-        }
-      }
-      tpl.Nodes[nodeid] = node;
-    }
-    for(var i=0; i<wflow.links.length; i++) {
-      var l = wflow.links[i];
-      var v = varid_hash[l.variable];
-      if(l.type == "data") {
-        var lid = l.to+"_"+v.canonical_name;
-        var link = {
-          id: lid,
-          toNode: {id: l.to},
-          toPort: {id: "inport_" + v.canonical_name},
-          variable: {id: v.id}
-        }
-        var cat = tpl.Nodes[l.to].category;
-        if(cat)
-          tpl.Variables[v.id].category = cat;
-
-        tpl.Links[lid] = link;
-      }
-      else if(l.type == "output") {
-        var lid = l.from+"_"+v.canonical_name;
-        var link = {
-          id: lid,
-          fromNode: {id: l.from},
-          fromPort: {id: "outport_" + v.canonical_name},
-          variable: {id: v.id}
-        }
-        var cat = tpl.Nodes[l.from].category;
-        if(!tpl.Variables[v.id].category && cat)
-          tpl.Variables[v.id].category = cat;
-
-        tpl.Links[lid] = link;
-      }
-      else if(l.type == "model") {
-        var lid = l.from+"_"+l.to+"_"+v.canonical_name;
-        var link = {
-          id: lid,
-          fromNode: {id: l.from},
-          fromPort: {id: "outport_" + v.canonical_name},
-          toNode: {id: l.to},
-          toPort: {id: "inport_" + v.canonical_name},
-          variable: {id: v.id}
-        }
-        var cat = tpl.Nodes[l.from].category;
-        if(!tpl.Variables[v.id].category && cat)
-          tpl.Variables[v.id].category = cat;
-        else {
-          cat = tpl.Nodes[l.to].category;
-          if(!tpl.Variables[v.id].category && cat)
-            tpl.Variables[v.id].category = cat;
-        }
-
-        tpl.Links[lid] = link;
-      }
-    }
-    return wingsw;
-  }
-
-  createWingsWorkflow(wflow, clib) {
+  
+  public Workflow createWingsWorkflow(WorkflowSolution wflow, String userid, MintPlanner clib) {
     if(wflow == null)
       return null;
 
-    // FIXME: This is currently hardcoded. Should be configurable
-    clib.storage = "/home/varun/.wings/storage";
-    var dotpath = "/usr/bin/dot";
-    var ontpfx = "http://www.wings-workflows.org/ontology";
+    PropertyListConfiguration cprops = Config.get().getProperties();
+    String wingsServer = cprops.getString("wings.server");
+    String wingsDomain = cprops.getString("wings.domain");
+    String wingsStorage = cprops.getString("wings.storage");
+    String dotpath = cprops.getString("wings.dotpath");
+    String ontpfx = cprops.getString("wings.ontology_prefix");
+    
+    String pfx = wingsServer + "/export/users/" + userid + "/" + wingsDomain;
+    String tname = this.getRandomID("workflow");
+    String tns = pfx + "/workflows/" + tname + ".owl#";
+    String tid = tns + tname;
+    String clibns = pfx + "/components/library.owl#";    
 
-    var tname = wflow.name + "_" + Math.random().toString(36).substr(2, 9);
-    var usfx = "/users/" + clib.userid + "/" + clib.wingsDomain;
-    var pfx = clib.wingsServer + "/export" + usfx;
-    var tns = pfx + "/workflows/" + tname + ".owl#";
-    var tid = tns + tname;
+    Workflow tpl = new Workflow(tid);
 
-    var clibns = pfx + "/components/library.owl#";
-    var purl = clib.wingsServer + usfx;
-    var pdir = clib.storage + usfx;
+    HashMap<String, ArrayList<String>> varfiles_hash = new HashMap<String, ArrayList<String>>();
+    HashMap<String, GVariable> gvarid_hash = new HashMap<String, GVariable>();
+    HashMap<String, Port> port_hash = new HashMap<String, Port>();
+    HashMap<String, Node> node_hash = new HashMap<String, Node>();
+    HashMap<String, ArrayList<String>> filevars = new HashMap<String, ArrayList<String>>();
+    
+    String usfx = "/users/" + userid + "/" + wingsDomain;
+    //String purl = wingsServer + usfx;
+    String pdir = wingsStorage + usfx;
 
-    var wingsw = {
-      template: {
-        id: tid,
-        Nodes: {},
-        Links: {},
-        Variables: {},
-        inputRoles: {},
-        outputRoles: {},
-        onturl: ontpfx + "/workflow.owl",
-        wflowns: ontpfx + "/workflow.owl#",
-        version: 0,
-        subtemplates: {},
-        metadata: {},
-        rules: {},
-        props: {
-          "lib.concrete.url": pfx + "/components/library.owl",
-          "lib.domain.execution.url": pfx + "/executions/library.owl",
-          "lib.domain.code.storage": pdir + "/code/library",
-          "domain.workflows.dir.url": pfx + "/workflows",
-          "user.id": clib.userid,
-          "tdb.repository.dir": clib.storage + "/TDB",
-          "viewer.id": clib.userid,
-          "domain.executions.dir.url": pfx + "/executions",
-          "lib.domain.data.url": pfx + "/data/library.owl",
-          "ont.domain.data.url": pfx + "/data/ontology.owl",
-          "lib.abstract.url": pfx + "/components/abstract.owl",
-          "lib.provenance.url": clib.wingsServer + "/export/common/provenance/library.owl",
-          "ont.data.url": ontpfx + "/data.owl",
-          "lib.domain.data.storage": pdir + "/data",
-          "lib.domain.workflow.url": pfx + "/workflows/library.owl",
-          "lib.resource.url": clib.wingsServer + "/export/common/resource/library.owl",
-          "ont.component.url": ontpfx + "/component.owl",
-          "ont.workflow.url": ontpfx + "/workflow.owl",
-          "ont.dir.url": ontpfx,
-          "dot.path": dotpath,
-          "ont.domain.component.ns": clibns,
-          "ont.execution.url": ontpfx + "/execution.owl",
-          "ont.resource.url": ontpfx + "/resource.owl"
-        }
-      }
-    }
-    var tpl = wingsw.template;
-
+    HashMap<String, String> props = new HashMap<String, String>();
+    props.put("lib.concrete.url", pfx + "/components/library.owl");
+    props.put("lib.domain.execution.url", pfx + "/executions/library.owl");
+    props.put("lib.domain.code.storage", pdir + "/code/library");
+    props.put("domain.workflows.dir.url", pfx + "/workflows");
+    props.put("user.id", userid);
+    props.put("tdb.repository.dir", wingsStorage + "/TDB");
+    props.put("viewer.id", userid);
+    props.put("domain.executions.dir.url", pfx + "/executions");
+    props.put("lib.domain.data.url", pfx + "/data/library.owl");
+    props.put("ont.domain.data.url", pfx + "/data/ontology.owl");
+    props.put("lib.abstract.url", pfx + "/components/abstract.owl");
+    props.put("lib.provenance.url", wingsServer + "/export/common/provenance/library.owl");
+    props.put("ont.data.url", ontpfx + "/data.owl");
+    props.put("lib.domain.data.storage", pdir + "/data");
+    props.put("lib.domain.workflow.url", pfx + "/workflows/library.owl");
+    props.put("lib.resource.url", wingsServer + "/export/common/resource/library.owl");
+    props.put("ont.component.url", ontpfx + "/component.owl");
+    props.put("ont.workflow.url", ontpfx + "/workflow.owl");
+    props.put("ont.dir.url", ontpfx);
+    props.put("dot.path", dotpath);
+    props.put("ont.domain.component.ns", clibns);
+    props.put("ont.execution.url", ontpfx + "/execution.owl");
+    props.put("ont.resource.url", ontpfx + "/resource.owl");
+    
+    tpl.setProps(props);
+    
     // Create Workflow Nodes & Ports
-    for(var i=0; i<wflow.models.length; i++) {
-      var c = wflow.models[i];
-      var nodeid = tns + c.id + "_node";
-      var node = {
-        id: nodeid,
-        name: c.label,
-        inputPorts: {},
-        outputPorts: {},
-        category: c.category,
-        componentVariable: {
-          binding: {
-            id: clibns + c.label,
-            type: "uri"
-          },
-          id: nodeid + "_component"
-        }
+    for(Model c : wflow.getModels()) {
+      String cvarName = c.getLocalName(); //this.getRandomID(c.getLocalName());
+      /*if(c.getLabel() != null)
+        cvarName = c.getLabel().replaceAll("\\s+", "_");*/
+      String cvarId = tns + cvarName;
+      ComponentVariable cvar = new ComponentVariable(cvarId);
+      String cId = clibns + cvarName;
+      Binding b = new Binding(cId);
+      cvar.setBinding(b);
+      //cvar.setLabel(c.getLabel());
+      Node node = new Node(cvarId+"_node");
+      node.setComponentVariable(cvar);
+      node.setCategory(this.getModelCategory(c));
+
+      for(ModelIO ip : c.getInputs()) {
+        String roleid = ip.getLocalName();
+        String portid =  node.getId() + "_in_" + roleid;
+        Port port = new Port(portid);
+        Role role = new Role(portid + "_role", 1);
+        role.setRoleid(roleid);
+        port.setRole(role);
+        node.addInputPort(port);
+        port_hash.put(portid, port);
       }
-      for(var j=0; j<c.inputs.length; j++) {
-        var ip = c.inputs[j];
-        var roleid = ip.id;
-        var portid = tns + roleid + "_inport";
-        node.inputPorts[portid] = {
-          id: portid,
-          role: {
-            type: 1,
-            roleid: roleid,
-            dimensionality: 0,
-            id: portid + "_role"
-          }
-        }
+      for(ModelIO op : c.getOutputs()) {
+        String roleid = op.getLocalName();
+        String portid = node.getId() + "_out_" + roleid;
+        Port port = new Port(portid);
+        Role role = new Role(portid + "_role", 1);
+        role.setRoleid(roleid);
+        port.setRole(role);
+        node.addOutputPort(port);
+        port_hash.put(portid, port);
       }
-      for(var j=0; j<c.outputs.length; j++) {
-        var op = c.outputs[j];
-        var roleid = op.id;
-        var portid = tns + roleid + "_outport";
-        node.outputPorts[portid] = {
-          id: portid,
-          role: {
-            type: 1,
-            roleid: roleid,
-            dimensionality: 0,
-            id: portid + "_role"
-          }
-        }
-      }
-      tpl.Nodes[nodeid] = node;
+      tpl.addNode(node);
+      node_hash.put(c.getID(), node);
     }
+
     // Workflow Variables
-    var varid_hash = {};
-    var filevars = {};
-    for(var i=0; i<wflow.variables.length; i++) {
-      var v = wflow.variables[i];
-      if(!v.resolved)
+    for(GVariable v : wflow.getVariables()) {
+      if(!v.isResolved())
         continue;
-      // Create a hash of variable id to variable object
-      varid_hash[v.id] = v;
-      var fid = null;
-      // Create a mapping of file ids to variables it contains
-      for(var cid in v.provenance) {
-        var fname = v.provenance[cid].file_id;
-        var fid = tns + fname;
-        if(!(fid in filevars))
-          filevars[fid] = [];
-        filevars[fid].push(v.id);
-        tpl.Variables[fid] = {
-          id: fid,
-          name: fname,
-          extra: {
-            graph_variables: filevars[fid]
-          },
-          type: 1 //FIXME: use category here
+
+      // Create a mapping of workflow variables to graph variables
+      for(VariableProvenance prov: v.getProvenance()) {
+        String fname = prov.getFileName();
+        String fid = tns + fname;
+        Variable var = tpl.getVariable(fid);
+        if(var == null) {
+          var = new Variable(fid, 1);
+          //var.setLabel(v.getLabel());          
+          tpl.addVariable(var);
         }
+        // Add mapping of workflow variable to graph variable
+        ArrayList<String> vars = filevars.get(fid);
+        if(vars == null)
+          vars = new ArrayList<String>();
+        if(!vars.contains(v.getID()))
+          vars.add(v.getID());
+        filevars.put(fid, vars);
+        
+        // Add mapping of graph variable to workflow variable(s)
+        ArrayList<String> files = varfiles_hash.get(v.getID());
+        if(files == null)
+          files = new ArrayList<String>();
+        files.add(var.getLocalName());
+        varfiles_hash.put(v.getID(), files);        
       }
+      gvarid_hash.put(v.getID(), v);      
     }
-
+    
+    // Set graph variables mapping as extra information for workflow variable
+    for(Variable var : tpl.getVariables().values()) {
+      HashMap<String, ArrayList<String>> extra = new HashMap<String, ArrayList<String>>();
+      extra.put("graph_variables", filevars.get(var.getId()));
+      var.setExtra(extra);
+    }
+    
     // Create Workflow Links
-    var vars_done = {};
-    for(var i=0; i<wflow.links.length; i++) {
-      var l = wflow.links[i];
-      if(l.variable in vars_done)
+    HashMap<String, Boolean> vars_done = new HashMap<String, Boolean>();
+    for(WorkflowLink l : wflow.getLinks()) {
+      if(vars_done.containsKey(l.getFrom()+"_"+l.getVariable()+"_"+l.getTo()))
         continue;
-
-      var v = varid_hash[l.variable];
-      var from = v.provenance[l.from];
-      var to = v.provenance[l.to];
-
-      // Create fully qualified uris for use in wings template
-      l.from_uri = tns + l.from + "_node";
-      l.to_uri = tns + l.to + "_node";
-      if(from)
-        from.file_uri = tns + from.file_id;
-      if(to)
-        to.file_uri = tns + to.file_id;
-
-      if(l.type == "data") {
-        var lid = l.to_uri+"_"+to.file_id;
-        var link = {
-          id: lid,
-          toNode: {id: l.to_uri},
-          toPort: {id: to.file_uri + "_inport"},
-          variable: {id: to.file_uri}
-        };
-        var cat = tpl.Nodes[l.to_uri].category;
-        if(!tpl.Variables[to.file_uri].category && cat)
-          tpl.Variables[to.file_uri].category = cat;
-
-        tpl.Links[lid] = link;
+      
+      ArrayList<String> filenames = varfiles_hash.get(l.getVariable());
+      GVariable v = gvarid_hash.get(l.getVariable());
+      
+      // Get relevant provenance item
+      VariableProvenance toprov=null, fromprov=null;
+      Variable var = null;
+      
+      // Prefer output file id from the link's from node
+      String tvarname = v.getMatchingFileName(l.getTo(), filenames, true);
+      if(tvarname != null) {
+        String tvarid = tns + tvarname;
+        Variable fvar = tpl.getVariable(tvarid);
+        if(fvar != null)
+          var = fvar;
+        toprov = v.getMatchingProvenanceItem(l.getTo(), tvarname);
       }
-      else if(l.type == "output") {
-        var lid = l.from_uri+"_"+from.file_id;
-        var link = {
-          id: lid,
-          fromNode: {id: l.from_uri},
-          fromPort: {id: from.file_uri + "_outport"},
-          variable: {id: from.file_uri}
-        };
-        var cat = tpl.Nodes[l.from_uri].category;
-        if(!tpl.Variables[from.file_uri].category && cat)
-          tpl.Variables[from.file_uri].category = cat;
-
-        tpl.Links[lid] = link;
+      String fvarname = v.getMatchingFileName(l.getFrom(), filenames, false);
+      if(fvarname != null) {
+        String fvarid = tns + fvarname;
+        Variable tvar = tpl.getVariable(fvarid);
+        if(tvar != null)
+          var = tvar;
+        fromprov = v.getMatchingProvenanceItem(l.getFrom(), fvarname);
       }
-      else if(l.type == "model") {
-        // TODO:
-        // Check from.metadata with to.metadata
-        // If not same, then add conversion fragment if possible
-        var frommeta = JSON.stringify(from.metadata);
-        var tometa = JSON.stringify(to.metadata);
-        if(frommeta != tometa) {
+      
+      if(l.getType() == Type.DATA) {
+        String roleid = toprov.getFileName();
+        Node node = node_hash.get(l.getTo());
+        String portid = node.getId() + "_in_" + roleid;
+        String linkid = portid + "_to";
+        Port port = port_hash.get(portid);
+        Link link = new Link(linkid, null, null, node.getId(), port.getId(), var.getId());
+        if(node.getCategory() != null)
+          var.setCategory(node.getCategory());
+        tpl.addLink(link);
+      }
+      else if(l.getType() == Type.OUTPUT) {
+        String roleid = fromprov.getFileName();
+        Node node = node_hash.get(l.getFrom());
+        String portid = node.getId() + "_out_" + roleid;
+        String linkid = portid + "_from";
+        Port port = port_hash.get(portid);
+        Link link = new Link(linkid, node.getId(), port.getId(), null, null, var.getId());
+        if(var.getCategory() == null && node.getCategory() != null)
+          var.setCategory(node.getCategory());
+        tpl.addLink(link);
+      }
+      else if(l.getType() == Type.MODEL) {
+        String frommeta = fromprov.getMetadata().toString();
+        String tometa = toprov.getMetadata().toString();
+        if(!frommeta.equals(tometa)) {
+          // TODO: Add transformation workflows (from Data Catalog ?)
+          
+          /*
           for(var j=0; j<clib.workflow_fragments.length; j++) {
             var wfrag = clib.workflow_fragments[j];
             if(wfrag.variable == v.canonical_name) {
@@ -691,138 +621,228 @@ public class Solution {
             }
           }
           continue;
+          */
         }
-
-        var lid = l.from_uri+"_"+l.to+"_"+from.file_id;
-        var link = {
-          id: lid,
-          fromNode: {id: l.from_uri},
-          fromPort: {id: from.file_uri + "_outport"},
-          toNode: {id: l.to_uri},
-          toPort: {id: to.file_uri + "_inport"},
-          variable: {id: from.file_uri}
+        
+        // If a link to itself, then don't add
+        if(l.getFrom().equals(l.getTo())) {
+          // Ignore
         }
-
-        var cat = tpl.Nodes[l.from_uri].category;
-        if(!tpl.Variables[from.file_uri].category && cat)
-          tpl.Variables[from.file_uri].category = cat;
         else {
-          var cat = tpl.Nodes[l.to_uri].category;
-          if(tpl.Variables[to.file_uri] && !tpl.Variables[to.file_uri].category && cat)
-            tpl.Variables[to.file_uri].category = cat;
+          Node fromNode = node_hash.get(l.getFrom());
+          Node toNode = node_hash.get(l.getTo());
+          Port fromPort = port_hash.get(fromNode.getId() + "_out_" + fromprov.getFileName());
+          Port toPort = port_hash.get(toNode.getId() + "_in_" + toprov.getFileName());
+          String linkid = fromPort.getId() + "_to_" + toPort.getLocalName();
+          Link link = new Link(linkid, fromNode.getId(), fromPort.getId(), 
+              toNode.getId(), toPort.getId(), var.getId());
+  
+          if(var.getCategory() == null && fromNode != null && fromNode.getCategory() != null)
+            var.setCategory(fromNode.getCategory());
+          else if(var.getCategory() == null && toNode != null && toNode.getCategory() != null)
+            var.setCategory(toNode.getCategory());
+  
+          if(!toprov.getFileName().equals(fromprov.getFileName())) {
+            tpl.variables.remove(tns + toprov.getFileName());
+            ArrayList<String> linkids = new ArrayList<String>();
+            for(Link tl : tpl.getLinks().values()) {
+              if(tl.getVariable().getId().equals(tns + toprov.getFileName()))
+                linkids.add(tl.getId());
+            }
+            for(String lid : linkids)
+              tpl.getLinks().remove(lid);
+          }
+          
+          tpl.addLink(link);
         }
-
-        tpl.Links[lid] = link;
-        // Since we are combining 2 variables into 1 here as they are compatible
-        // Delete one of them
-        if(to.file_uri != from.file_uri)
-          delete tpl.Variables[to.file_uri];
       }
-
-      if(from) {
-        for(var j=0; j<filevars[from.file_uri]; j++) {
-          var vid = filevars[from.file_uri][j];
-          vars_done[vid] = true;
+      if(fromprov != null) {
+        for(String vid : filevars.get(tns + fromprov.getFileName())) {
+          vars_done.put(l.getFrom()+"_"+vid+"_"+l.getTo(), true);
         }
       }
-      if(to) {
-        for(var j=0; j<filevars[to.file_uri]; j++) {
-          var vid = filevars[to.file_uri][j];
-          vars_done[vid] = true;
+      if(toprov != null) {
+        for(String vid : filevars.get(tns + toprov.getFileName())) {
+          vars_done.put(l.getFrom()+"_"+vid+"_"+l.getTo(), true);
         }
-      }
+      }      
     }
 
     // Create Input and Output links for unclaimed ports
-    for(var nid in tpl.Nodes) {
-      var n = tpl.Nodes[nid];
-      for(var portid in n.inputPorts) {
-        var p = n.inputPorts[portid];
-        var fname = p.role.roleid;
-        var lid = n.id+"_"+fname;
-        var fid = tns + fname;
-        var portid = fid + "_inport";
+    for(String nid : tpl.getNodes().keySet()) {
+      Node n = tpl.getNodes().get(nid);
+      for(String portid : n.getInputPorts().keySet()) {
+        Port p = n.getInputPorts().get(portid);
+
+        String roleid = p.getRole().getRoleid();
+        String pid = n.getId() + "_in_" + roleid;
+        String linkid = portid + "_to";
+        String fid = tns + roleid;
+        
         // Check for links to port
-        if(!this.hasLinksToPort(tpl, n.id, portid)) {
-          tpl.Variables[fid] = {
-            id: fid,
-            name: fname,
-            type: 1,
-            category: n.category
+        if(!this.hasLinksToPort(tpl, n.getId(), pid)) {
+          Variable v = tpl.getVariable(fid);
+          if(v == null) {
+            v = new Variable(fid, 1);
+            tpl.addVariable(v);
           }
-          tpl.Links[lid] = {
-            id: lid,
-            toNode: {id: n.id},
-            toPort: {id: portid},
-            variable: {id: fid}
-          };
+          v.setCategory(n.getCategory());
+          Link l = new Link(linkid, null, null, n.getId(), pid, fid);
+          tpl.addLink(l);
         }
       }
-      for(var portid in n.outputPorts) {
-        var p = n.outputPorts[portid];
-        var fname = p.role.roleid;
-        var lid = n.id+"_"+fname;
-        var fid = tns + fname;
-        var portid = fid + "_outport";
-        if(!this.hasLinksFromPort(tpl, n.id, portid)) {
-          tpl.Variables[fid] = {
-            id: fid,
-            name: fname,
-            type: 1,
-            category: n.category
+      for(String portid : n.getOutputPorts().keySet()) {
+        Port p = n.getOutputPorts().get(portid);
+
+        String roleid = p.getRole().getRoleid();
+        String pid = n.getId() + "_out_" + roleid;
+        String linkid = portid + "_from";
+        String fid = tns + roleid;
+        
+        // Check for links to port
+        if(!this.hasLinksFromPort(tpl, n.getId(), pid)) {
+          Variable v = tpl.getVariable(fid);
+          if(v == null) {
+            v = new Variable(fid, 1);
+            tpl.addVariable(v);
           }
-          tpl.Links[lid] = {
-            id: lid,
-            fromNode: {id: n.id},
-            fromPort: {id: portid},
-            variable: {id: fid}
-          };
+          v.setCategory(n.getCategory());
+          Link l = new Link(linkid, n.getId(), pid, null, null, fid);
+          tpl.addLink(l);
         }
       }
     }
 
     // Create Input and Output roles
-    for(var lid in tpl.Links) {
-      var link = tpl.Links[lid];
-      var v = tpl.Variables[link.variable.id];
-      if(!link.fromNode) {
-        tpl.inputRoles[v.id] = {
-          type: v.type,
-          roleid: getLocalName(v.id),
-          dimensionality: 0,
-          id: v.id + "_irole"
-        }
+    for(String lid : tpl.getLinks().keySet()) {
+      Link link = tpl.getLink(lid);
+      Variable v = tpl.getVariable(link.getVariable().getId());
+      if(link.getFromNode() == null) {
+        String roleid = v.getId() + "_irole";
+        Role role = new Role(roleid, v.getType());
+        tpl.addInputRole(v.getId(), role);
       }
-      if(!link.toNode) {
-        tpl.outputRoles[v.id] = {
-          type: v.type,
-          roleid: getLocalName(v.id),
-          dimensionality: 0,
-          id: v.id + "_orole"
-        }
+      if(link.getToNode() == null) {
+        String roleid = v.getId() + "_orole";
+        Role role = new Role(roleid, v.getType());
+        tpl.addOutputRole(v.getId(), role);
       }
     }
-    return wingsw;
+    return tpl;
   }
 
-  hasLinksToPort(tpl, nid, pid) {
-    for(var lid in tpl.Links) {
-      var l = tpl.Links[lid];
-      if(l.toNode && l.toNode.id == nid &&
-          l.toPort && l.toPort.id == pid)
+  boolean hasLinksToPort(Workflow tpl, String nid, String pid) {
+    for(String lid : tpl.getLinks().keySet()) {
+      Link l = tpl.getLinks().get(lid);
+      if(l.getToNode() != null && l.getToNode().getId().equals(nid) &&
+          l.getToPort() != null && l.getToPort().getId().equals(pid))
         return true;
     }
     return false;
   }
 
-  hasLinksFromPort(tpl, nid, pid) {
-    for(var lid in tpl.Links) {
-      var l = tpl.Links[lid];
-      if(l.fromNode && l.fromNode.id == nid &&
-          l.fromPort && l.fromPort.id == pid)
+  boolean hasLinksFromPort(Workflow tpl, String nid, String pid) {
+    for(String lid : tpl.getLinks().keySet()) {
+      Link l = tpl.getLinks().get(lid);
+      if(l.getFromNode() != null && l.getFromNode().getId().equals(nid) &&
+          l.getFromPort() != null && l.getFromPort().getId().equals(pid))
         return true;
     }
     return false;
   }
-  */
+  
+  public VariableGraph createGraph(WorkflowSolution wflow) {
+    if(wflow == null)
+      return null;
+    
+    VariableGraph graph = new VariableGraph();
+    graph.setID(wflow.getID());
+    graph.setLabel(wflow.getLabel());
+
+    Map<String, Variable> gvars = wflow.getModelGraph().getVariables();
+    String tns = wflow.getModelGraph().getNamespace();
+    HashMap<String, GVariable> varid_hash = new HashMap<String, GVariable>();
+    HashMap<String, GVariable> cname_hash = new HashMap<String, GVariable>();
+    HashMap<String, Model> compid_hash = new HashMap<String, Model>();
+    
+    for(GVariable v : wflow.getVariables()) {
+      if(!v.isResolved())
+        continue;
+      GVariable nv = new GVariable(v);
+      Variable gvar = gvars.get(tns + v.getLocalName());
+      if(gvar != null)
+        nv.setCategory(gvar.getCategory());
+      cname_hash.put(nv.getCanonical_name(), nv);
+      varid_hash.put(nv.getID(), nv);
+      graph.getVariables().add(nv);
+    }
+    
+    for(Model c : wflow.getModels()) {
+      compid_hash.put(c.getID(), c);
+    }
+    
+    for(WorkflowLink l : wflow.getLinks()) {
+      GVariable v = varid_hash.get(l.getVariable());
+      if(l.getFrom() != null && l.getType() != Type.DATA) {
+        Model c = compid_hash.get(l.getFrom());
+        for(ModelIO ip : c.getInputs()) {
+          for(ModelVariable var : ip.getVariables()) {
+            String cname = this.vocabulary.getCanonicalName(var.getStandard_name());
+            GVariable fromvar = cname_hash.get(cname);
+            Relation rel = new Relation();
+            rel.setFrom(fromvar.getID());
+            rel.setTo(v.getID());
+            graph.getLinks().add(rel);
+            
+            if(fromvar.getCategory() == null && c.getType() != null)
+              fromvar.setCategory(c.getType().getCategory());
+          }
+        }
+        if(v.getCategory() == null && c.getType() != null)
+          v.setCategory(c.getType().getCategory());
+      }
+      
+      if(l.getTo() != null) {
+        Model c = compid_hash.get(l.getTo());
+        for(ModelIO op : c.getOutputs()) {
+          for(ModelVariable var : op.getVariables()) {
+            String cname = this.vocabulary.getCanonicalName(var.getStandard_name());
+            GVariable tovar = cname_hash.get(cname);
+            Relation rel = new Relation();
+            rel.setFrom(v.getID());
+            rel.setTo(tovar.getID());
+            graph.getLinks().add(rel);
+            
+            if(tovar.getCategory() == null && c.getType() != null)
+              tovar.setCategory(c.getType().getCategory());
+          }
+        }
+        if(v.getCategory() == null && c.getType() != null)
+          v.setCategory(c.getType().getCategory());
+      }      
+    }
+    return graph;
+  }
+  
+  public VariableGraph diffGraph(VariableGraph newgraph, VariableGraph oldgraph) {
+    HashMap<String, Boolean> linkhash = new HashMap<String, Boolean>();
+    HashMap<String, Boolean> varhash = new HashMap<String, Boolean>();
+    for(GVariable v : oldgraph.getVariables()) {
+      varhash.put(v.getID(), true);
+    }
+    for(Relation l : oldgraph.getLinks()) {
+      linkhash.put(l.getFrom() + "-" + l.getTo(), true);
+    }
+    // Annotate new graph
+    for(GVariable v : newgraph.getVariables()) {
+      if(!varhash.containsKey(v.getID()))
+        v.setAdded(true);
+    }
+    for(Relation l : newgraph.getLinks()) {
+      if(!linkhash.containsKey(l.getFrom() + "-" + l.getTo()))
+        l.setAdded(true);
+    }
+    return newgraph;
+  }
+
 }

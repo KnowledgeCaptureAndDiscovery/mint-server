@@ -3,6 +3,8 @@ package org.mint.server.classes.graph;
 public class Relation {
   String from;
   String to;
+  boolean added;
+
   public String getFrom() {
     return from;
   }
@@ -14,5 +16,11 @@ public class Relation {
   }
   public void setTo(String to) {
     this.to = to;
+  }
+  public boolean isAdded() {
+    return added;
+  }
+  public void setAdded(boolean added) {
+    this.added = added;
   }
 }

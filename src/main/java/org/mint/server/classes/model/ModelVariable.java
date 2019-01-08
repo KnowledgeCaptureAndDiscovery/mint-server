@@ -9,7 +9,6 @@ public class ModelVariable extends URIEntity {
   
   String description;
   String standard_name;
-  String canonical_name;
   
   HashMap<String, String> metadata;
   
@@ -28,12 +27,6 @@ public class ModelVariable extends URIEntity {
   }
   public void setStandard_name(String standard_name) {
     this.standard_name = standard_name;
-  }
-  public String getCanonical_name() {
-    return canonical_name;
-  }
-  public void setCanonical_name(String canonical_name) {
-    this.canonical_name = canonical_name;
   }
   public HashMap<String, String> getMetadata() {
     return metadata;

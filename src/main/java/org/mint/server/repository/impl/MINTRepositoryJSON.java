@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
@@ -16,21 +17,20 @@ import org.mint.server.classes.InterventionSpecification;
 import org.mint.server.classes.Region;
 import org.mint.server.classes.Task;
 import org.mint.server.classes.graph.Relation;
-import org.mint.server.classes.graph.Variable;
+import org.mint.server.classes.graph.GVariable;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.question.ModelingQuestion;
 import org.mint.server.classes.workflow.ModelGraph;
 import org.mint.server.classes.workflow.TempWorkflowDetails;
 import org.mint.server.classes.workflow.WorkflowTemplate;
 import org.mint.server.planner.MintPlanner;
-import org.mint.server.planner.Workflow;
+import org.mint.server.planner.WorkflowSolution;
 import org.mint.server.repository.MintRepository;
 import org.mint.server.repository.MintVocabulary;
 import org.mint.server.util.Config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
-import com.google.common.io.Files;
 
 public class MINTRepositoryJSON implements MintRepository {
   String server, storage, userid;
@@ -108,7 +108,7 @@ public class MINTRepositoryJSON implements MintRepository {
     File dir = new File(qdir);
     if(!f.exists()) {
       try {
-        Files.write("[]".getBytes(), new File(qfile));
+        Files.write(f.toPath(), "[]".getBytes());
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -280,11 +280,11 @@ public class MINTRepositoryJSON implements MintRepository {
     String qdir = this.getQuestionDir(qname);
     this.createDirectory(qdir);
     try {
-      Files.write("[]".getBytes(), new File(this.getTasksFile(qname)));
-      Files.write("[]".getBytes(), new File(this.getHistoryFile(qname)));
-      Files.write("[]".getBytes(), new File(this.getFavoritesFile(qname)));
-      Files.write("[]".getBytes(), new File(this.getDataSpecificationsFile(qname)));
-      Files.write("{}".getBytes(), new File(this.getWorkflowsFile(qname)));
+      Files.write(new File(this.getTasksFile(qname)).toPath(), "[]".getBytes());
+      Files.write(new File(this.getHistoryFile(qname)).toPath(), "[]".getBytes());
+      Files.write(new File(this.getFavoritesFile(qname)).toPath(), "[]".getBytes());
+      Files.write(new File(this.getDataSpecificationsFile(qname)).toPath(), "[]".getBytes());
+      Files.write(new File(this.getWorkflowsFile(qname)).toPath(), "{}".getBytes());
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -352,7 +352,7 @@ public class MINTRepositoryJSON implements MintRepository {
     String randomid = this.getRandomID("graph-");
     String newid = this.getGraphURI(randomid);
     graph.setID(newid);
-    for(Variable v : graph.getVariables()) {
+    for(GVariable v : graph.getVariables()) {
       v.setID(v.getID().replace(origid, newid));
     }
     for(Relation l : graph.getLinks()) {
@@ -516,8 +516,8 @@ public class MINTRepositoryJSON implements MintRepository {
   /* Start of Workflow Composition */
   
   @Override
-  public ArrayList<Workflow> composeModelGraphs(VariableGraph graph, DataSpecification ds) {
-    return new MintPlanner().composeModelGraphs(graph, ds, this.vocabulary.getModels());
+  public ArrayList<WorkflowSolution> createWorkflowSolutions(VariableGraph graph, DataSpecification ds) {
+    return new MintPlanner().createWorkflowSolutions(graph, ds, this.vocabulary.getModels());
   }
 
   @Override

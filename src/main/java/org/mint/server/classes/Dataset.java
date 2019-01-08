@@ -1,67 +1,44 @@
 package org.mint.server.classes;
 
-import java.util.Date;
+import java.util.ArrayList;
 
-public class Dataset extends URIEntity {
-  private static final long serialVersionUID = -1630837293494837448L;
+public class Dataset {
+  String id;
+  String name;
+  ArrayList<DataResource> resources;
+  ArrayList<String> variables;
 
-  String dataCatalogId;
-  
-  Region associatedWithRegion;
-  
-  Date fromDate;
-  
-  Date toDate;
-  
-  String dataType;
+  public String getId() {
+    return id;
+  }
 
-  public Dataset(String id, String name) {
-    super(id, name);
+  public void setId(String id) {
+    this.id = id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public ArrayList<String> getVariables() {
+    return variables;
+  }
+
+  public void setVariables(ArrayList<String> variables) {
+    this.variables = variables;
+  }
+
+  public ArrayList<DataResource> getResources() {
+    return resources;
+  }
+
+  public void setResources(ArrayList<DataResource> resources) {
+    this.resources = resources;
   }
   
-  public String getDataCatalogId() {
-    return dataCatalogId;
-  }
-
-  public void setDataCatalogId(String dataCatalogId) {
-    this.dataCatalogId = dataCatalogId;
-  }
-
-  public Region getAssociatedWithRegion() {
-    return associatedWithRegion;
-  }
-
-  public void setAssociatedWithRegion(Region associatedWithRegion) {
-    this.associatedWithRegion = associatedWithRegion;
-  }
-
-  public Date getFromDate() {
-    return fromDate;
-  }
-
-  public void setFromDate(Date fromDate) {
-    this.fromDate = fromDate;
-  }
-
-  public Date getToDate() {
-    return toDate;
-  }
-
-  public void setToDate(Date toDate) {
-    this.toDate = toDate;
-  }
-
-  public String getDataType() {
-    return dataType;
-  }
-
-  public void setDataType(String dataType) {
-    this.dataType = dataType;
-  }
-
-  public static long getSerialversionuid() {
-    return serialVersionUID;
-  }
-
 
 }

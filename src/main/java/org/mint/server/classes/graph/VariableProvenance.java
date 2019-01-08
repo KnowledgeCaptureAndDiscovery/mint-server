@@ -2,6 +2,8 @@ package org.mint.server.classes.graph;
 
 import java.util.HashMap;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class VariableProvenance {
   String model;
   String file_id;
@@ -40,5 +42,10 @@ public class VariableProvenance {
   }
   public void setIsinput(boolean isinput) {
     this.isinput = isinput;
+  }
+  
+  @JsonIgnore
+  public String getFileName() {
+    return this.file_id.replaceAll(".*#", "");
   }
 }

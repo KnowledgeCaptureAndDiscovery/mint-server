@@ -17,7 +17,8 @@
 		<javax.rs-api.version>2.0.1</javax.rs-api.version>
 		<jackson.version>2.4.6</jackson.version>
 		<commons-configuration.version>1.10</commons-configuration.version>
-		<ontapi.version>1.0-SNAPSHOT</ontapi.version>
+		<commons-io.version>2.6</commons-io.version>
+		<!-- wings.version>4.1-SNAPSHOT</wings.version -->
 		<java.version>1.7</java.version>	
 	    <maven.compiler.target>1.7</maven.compiler.target>
 	    <maven.compiler.source>1.7</maven.compiler.source>	
@@ -34,12 +35,12 @@
 	</repositories>
 
 	<dependencies>
-		<!-- ontapi -->
-		<dependency>
-			<groupId>edu.isi.kcap</groupId>
-			<artifactId>ontapi</artifactId>
-			<version>${ontapi.version}</version>
-		</dependency>
+		<!-- Wings Planner -->
+		<!-- dependency>
+			<groupId>edu.isi.wings</groupId>
+			<artifactId>wings-planner</artifactId>
+			<version>${wings.version}</version>
+		</dependency-->
         
 		<!-- REST API -->
 		<dependency>
@@ -87,7 +88,15 @@
             <groupId>commons-configuration</groupId>
             <artifactId>commons-configuration</artifactId>
             <version>${commons-configuration.version}</version>
-        </dependency>		
+        </dependency>	
+        
+        <!-- Apache Commons IO -->
+        <!-- https://mvnrepository.com/artifact/commons-io/commons-io -->
+		<dependency>
+		    <groupId>commons-io</groupId>
+		    <artifactId>commons-io</artifactId>
+		    <version>${commons-io.version}</version>
+		</dependency>
 
 	</dependencies>
 

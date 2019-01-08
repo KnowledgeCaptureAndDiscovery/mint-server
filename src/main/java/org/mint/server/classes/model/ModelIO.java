@@ -9,11 +9,20 @@ public class ModelIO extends URIEntity {
   
   ArrayList<ModelVariable> variables;
 
+  public ModelIO(String id) {
+    super(id);
+    this.variables = new ArrayList<ModelVariable>();
+  }
+  
   public ArrayList<ModelVariable> getVariables() {
     return variables;
   }
 
   public void setVariables(ArrayList<ModelVariable> variables) {
     this.variables = variables;
+  }
+  
+  public void addVariable(ModelVariable variable) {
+    this.variables.add(variable);
   }
 }

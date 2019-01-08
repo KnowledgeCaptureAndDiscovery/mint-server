@@ -11,7 +11,7 @@ import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.question.ModelingQuestion;
 import org.mint.server.classes.workflow.ModelGraph;
 import org.mint.server.classes.workflow.WorkflowTemplate;
-import org.mint.server.planner.Workflow;
+import org.mint.server.planner.WorkflowSolution;
 
 public interface MintRepository {
   // Vocabulary
@@ -54,7 +54,7 @@ public interface MintRepository {
   public void deleteDataSpecification(String questionid, String dsid);
   
   // Workflow Composition / Planning
-  public ArrayList<Workflow> composeModelGraphs(VariableGraph graph, 
+  public ArrayList<WorkflowSolution> createWorkflowSolutions(VariableGraph graph, 
       DataSpecification data_specification);
   public ArrayList<WorkflowTemplate> createWorkflows(VariableGraph graph, ModelGraph model_graph, 
       DataSpecification data_specification);
