@@ -20,9 +20,8 @@ import org.mint.server.classes.graph.Relation;
 import org.mint.server.classes.graph.GVariable;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.question.ModelingQuestion;
-import org.mint.server.classes.workflow.ModelGraph;
+import org.mint.server.classes.vocabulary.TaskType;
 import org.mint.server.classes.workflow.TempWorkflowDetails;
-import org.mint.server.classes.workflow.WorkflowTemplate;
 import org.mint.server.planner.MintPlanner;
 import org.mint.server.planner.WorkflowSolution;
 import org.mint.server.repository.MintRepository;
@@ -285,10 +284,24 @@ public class MINTRepositoryJSON implements MintRepository {
       Files.write(new File(this.getFavoritesFile(qname)).toPath(), "[]".getBytes());
       Files.write(new File(this.getDataSpecificationsFile(qname)).toPath(), "[]".getBytes());
       Files.write(new File(this.getWorkflowsFile(qname)).toPath(), "{}".getBytes());
+      
+      // Create default tasks for the question
+      this.createDefaultTasks(question.getID());
     } catch (IOException e) {
       e.printStackTrace();
     }
     return question.getID();
+  }
+  
+  private void createDefaultTasks(String questionid) {
+    for(TaskType taskType : MintVocabularyJSON.get().getTaskTypes()) {
+      Task task = new Task(taskType);
+      String taskid = this.getRandomID("task-"); 
+      String qname = questionid.substring(questionid.lastIndexOf("/"));
+      task.setID(this.getTaskURI(qname, taskid));
+      task.setQuestion(questionid);
+      this.addTask(qname, task);
+    }
   }
 
   @Override
@@ -413,7 +426,7 @@ public class MINTRepositoryJSON implements MintRepository {
   @Override
   public String addTask(String questionid, Task task) {
     ArrayList<Task> tasks = this.listTasks(questionid);
-    task.setStatus(Task.Status.ONGOING);
+    task.setStatus(Task.Status.NOT_STARTED);
     tasks.add(task);
     this.writeTasks(tasks, questionid);
     return task.getID();
@@ -516,15 +529,13 @@ public class MINTRepositoryJSON implements MintRepository {
   /* Start of Workflow Composition */
   
   @Override
-  public ArrayList<WorkflowSolution> createWorkflowSolutions(VariableGraph graph, DataSpecification ds) {
-    return new MintPlanner().createWorkflowSolutions(graph, ds, this.vocabulary.getModels());
-  }
-
-  @Override
-  public ArrayList<WorkflowTemplate> createWorkflows(VariableGraph graph, 
-      ModelGraph model_graph, DataSpecification ds) {
-    // TODO Auto-generated method stub
-    return null;
+  public ArrayList<WorkflowSolution> createWorkflowSolutions(
+      ArrayList<String> drivingVariables,
+      ArrayList<String> responseVariables,
+      VariableGraph cag,
+      DataSpecification ds) {
+    return new MintPlanner().createWorkflowSolutions(drivingVariables, 
+        responseVariables, cag, ds, this.vocabulary.getModels());
   }
   
   /* End of Workflow Compositions */

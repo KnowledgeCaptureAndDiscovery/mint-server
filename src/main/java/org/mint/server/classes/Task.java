@@ -3,15 +3,32 @@ package org.mint.server.classes;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.mint.server.classes.vocabulary.ActivityType;
+import org.mint.server.classes.vocabulary.TaskType;
+
 public class Task extends URIEntity {
   private static final long serialVersionUID = 862990933978159716L;
-  public enum Status { ONGOING, DONE, FAILED };
+  public enum Status { NOT_STARTED, ONGOING, DONE, FAILED };
 
   String type;
   Status status;
   String question;
   ArrayList<String> output;
   HashMap<String, Activity> activities;
+  
+  public Task() {}
+  
+  public Task(TaskType taskType) {
+    this.activities = new HashMap<String, Activity>();
+    this.output = new ArrayList<String>();
+    this.setType(taskType.getID());
+    this.setLabel(taskType.getLabel());
+    for(ActivityType atype : taskType.getActivityTypes()) {
+      Activity activity = new Activity();
+      activity.setLabel(atype.getLabel());
+      this.activities.put(atype.getID(), activity);
+    }
+  }
   
   public String getType() {
     return type;

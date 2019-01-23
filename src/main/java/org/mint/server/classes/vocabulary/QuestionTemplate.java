@@ -8,17 +8,17 @@ import org.mint.server.classes.question.ModelingQuestion;
 public class QuestionTemplate extends URIEntity {
   private static final long serialVersionUID = -6540468638453162722L;
   
-  ModelingQuestion.Type type;
+  ModelingQuestion.Type questionType;
   ArrayList<String> interventions;
   ArrayList<String> events;
   ArrayList<String> regions;
   ArrayList<Integer> years;
 
-  public ModelingQuestion.Type getType() {
-    return type;
+  public ModelingQuestion.Type getQuestionType() {
+    return questionType;
   }
-  public void setType(ModelingQuestion.Type type) {
-    this.type = type;
+  public void setQuestionTypee(ModelingQuestion.Type questionType) {
+    this.questionType = questionType;
   }
   public ArrayList<String> getInterventions() {
     return interventions;

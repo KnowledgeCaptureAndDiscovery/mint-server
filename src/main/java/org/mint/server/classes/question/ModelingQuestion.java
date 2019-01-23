@@ -1,6 +1,9 @@
 package org.mint.server.classes.question;
 
+import java.util.ArrayList;
+
 import org.mint.server.classes.URIEntity;
+import org.mint.server.classes.graph.GVariable;
 import org.mint.server.classes.question.template.TemplateTimePeriod;
 
 public class ModelingQuestion extends URIEntity {
@@ -9,11 +12,14 @@ public class ModelingQuestion extends URIEntity {
   public enum Type { DIAGNOSTIC, PROGNOSTIC, COUNTERFACTUAL } ;
   
   Type type;
-  
+
   String region;
-  String graph;
-  String intervention;
   TemplateTimePeriod timePeriod;
+  String intervention;
+  
+  String graph;
+  ArrayList<String> drivingVariables;
+  ArrayList<String> responseVariables;
   
   public ModelingQuestion() {
     super();
@@ -22,6 +28,8 @@ public class ModelingQuestion extends URIEntity {
   public ModelingQuestion(String id, String name, Type type) {
     super(id, name);
     this.type = type;
+    this.drivingVariables = new ArrayList<String>();
+    this.responseVariables = new ArrayList<String>();
   }
 
   public Type getType() {
@@ -30,6 +38,22 @@ public class ModelingQuestion extends URIEntity {
 
   public void setType(Type type) {
     this.type = type;
+  }
+
+  public ArrayList<String> getDrivingVariables() {
+    return drivingVariables;
+  }
+
+  public void setDrivingVariables(ArrayList<String> drivingVariables) {
+    this.drivingVariables = drivingVariables;
+  }
+
+  public ArrayList<String> getResponseVariables() {
+    return responseVariables;
+  }
+
+  public void setResponseVariables(ArrayList<String> responseVariables) {
+    this.responseVariables = responseVariables;
   }
 
   public String getGraph() {

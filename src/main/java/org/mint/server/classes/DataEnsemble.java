@@ -3,13 +3,13 @@ package org.mint.server.classes;
 import java.util.ArrayList;
 
 public class DataEnsemble {
-  ArrayList<String> datasets;
+  ArrayList<Dataset> datasets;
   ArrayList<String> variables;
   
-  public ArrayList<String> getDatasets() {
+  public ArrayList<Dataset> getDatasets() {
     return datasets;
   }
-  public void setDatasets(ArrayList<String> datasets) {
+  public void setDatasets(ArrayList<Dataset> datasets) {
     this.datasets = datasets;
   }
   public ArrayList<String> getVariables() {

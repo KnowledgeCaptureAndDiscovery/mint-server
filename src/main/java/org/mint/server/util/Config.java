@@ -1,11 +1,13 @@
 package org.mint.server.util;
 
 import java.io.File;
+import java.util.HashMap;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
+
 
 public class Config {
   static Config singleton = null;
@@ -77,16 +79,39 @@ public class Config {
         System.err.println("Cannot create storage directory: " + storageDir);
 
     PropertyListConfiguration config = new PropertyListConfiguration();
-    config.addProperty("storage.local", storageDir);
-    config.addProperty("storage.tdb", storageDir + File.separator + "TDB");
-    config.addProperty("storage.db", storageDir + File.separator + "DB");
+    config.addProperty("storage", storageDir);
     config.addProperty("server", server);
-    config.addProperty("perm_feature_enabled", "true");
     
     try {
         config.save("file://" + configFile);
     } catch (Exception e) {
         e.printStackTrace();
     }
+  }
+  
+  public HashMap<String, Object> getPropertiesMap() {
+    HashMap<String, Object> map = new HashMap<String, Object>();
+    map.put("storage", this.props.getString("storage"));
+    map.put("server", this.props.getString("server"));
+    
+    HashMap<String, String> wingsProps = new HashMap<String, String>();
+    wingsProps.put("server", this.props.getString("wings.server"));
+    wingsProps.put("domain", this.props.getString("wings.domain"));
+    wingsProps.put("gendomain", this.props.getString("wings.gendomain"));
+    wingsProps.put("storage", this.props.getString("wings.storage"));
+    wingsProps.put("dotpath", this.props.getString("wings.dotpath"));
+    wingsProps.put("ontology_prefix", this.props.getString("wings.ontology_prefix"));
+    map.put("wings", wingsProps);
+    
+    HashMap<String, String> catalogProps = new HashMap<String, String>();
+    catalogProps.put("model", this.props.getString("catalogs.model"));
+    catalogProps.put("data", this.props.getString("catalogs.data"));
+    map.put("catalogs", catalogProps);
+    
+    HashMap<String, String> vizProps = new HashMap<String, String>();
+    vizProps.put("server", this.props.getString("visualization.server"));
+    map.put("visualization", vizProps);
+    
+    return map;
   }
 }

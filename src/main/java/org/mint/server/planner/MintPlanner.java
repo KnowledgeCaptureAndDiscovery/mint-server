@@ -6,6 +6,7 @@ import java.util.TreeSet;
 
 import org.mint.server.classes.DataEnsemble;
 import org.mint.server.classes.DataSpecification;
+import org.mint.server.classes.Dataset;
 import org.mint.server.classes.graph.GVariable;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.graph.VariableProvider;
@@ -21,14 +22,24 @@ public class MintPlanner {
     
   }
   
-  public ArrayList<WorkflowSolution> createWorkflowSolutions(VariableGraph graph, DataSpecification ds, 
+  public ArrayList<WorkflowSolution> createWorkflowSolutions(
+      ArrayList<String> drivingVariables,
+      ArrayList<String> responseVariables,
+      VariableGraph graph,
+      DataSpecification ds, 
       ArrayList<Model> models) {
     ArrayList<WorkflowSolution> mgraphs = new ArrayList<WorkflowSolution>();
     String userid = ds.getID().replaceAll(".*/users/", "").replaceAll("/.*", "");
     MintVocabularyJSON vocabulary = MintVocabularyJSON.get();
     
-    // Copy variables array
-    ArrayList<GVariable> variables = new ArrayList<GVariable>(graph.getVariables());
+    // Initialze initial list of variables
+    ArrayList<GVariable> variables = new ArrayList<GVariable>();
+    for(GVariable gvar : graph.getVariables()) {
+      if(responseVariables != null && responseVariables.contains(gvar.getID()))
+        variables.add(gvar);
+      else if(drivingVariables != null && drivingVariables.contains(gvar.getID()))
+        variables.add(gvar);
+    }
 
     // Get datasets that provide variables
     HashMap<String, ArrayList<String>> data_providers = 
@@ -39,8 +50,8 @@ public class MintPlanner {
         ArrayList<String> datasets = data_providers.get(cname);
         if(datasets == null)
           datasets = new ArrayList<String>();
-        for(String dsid: ensemble.getDatasets()) {
-          datasets.add(dsid);
+        for(Dataset dataset: ensemble.getDatasets()) {
+          datasets.add(dataset.getName());
         }
         data_providers.put(cname, datasets);
       }

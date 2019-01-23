@@ -1,6 +1,7 @@
 package org.mint.server.api.impl;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -16,12 +17,14 @@ import org.mint.server.classes.StandardName;
 import org.mint.server.classes.URIEntity;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.model.Model;
+import org.mint.server.classes.rawcag.RawCAG;
 import org.mint.server.classes.vocabulary.EventType;
 import org.mint.server.classes.vocabulary.InterventionType;
 import org.mint.server.classes.vocabulary.QuestionTemplate;
 import org.mint.server.classes.vocabulary.TaskType;
 import org.mint.server.repository.MintRepository;
 import org.mint.server.repository.impl.MintVocabularyJSON;
+import org.mint.server.util.Config;
 
 @Path("common")
 public class CommonResource {
@@ -66,6 +69,29 @@ public class CommonResource {
   public VariableGraph getGraph(@PathParam("graphid") String graphid) {
     graphid = request.getRequestURL().toString();
     return MintVocabularyJSON.get().getGraph(graphid);
+  }
+  
+  @GET
+  @Path("rawcags")
+  public ArrayList<URIEntity> listRawCAGS() {
+    ArrayList<URIEntity> cagIds = new ArrayList<URIEntity>();
+    for(RawCAG cag : MintVocabularyJSON.get().getRawCAGs()) {
+      String cagid = request.getRequestURL().toString() + "/" + cag.getName();
+      cagIds.add(new URIEntity(cagid, cag.getName()));
+    }
+    return cagIds;
+  }
+  
+  @GET
+  @Path("rawcags/{cagname}")
+  public RawCAG getRawCAG(@PathParam("cagname") String cagname) {
+    return MintVocabularyJSON.get().getRawCAG(cagname);
+  }
+  
+  @GET
+  @Path("graphs/fromraw/{cagname}")
+  public VariableGraph convertRawCagToVariableGraph(@PathParam("cagname") String cagname) {
+    return MintVocabularyJSON.get().convertRawCagToVariableGraph(cagname);
   }
   
   @GET
@@ -125,6 +151,13 @@ public class CommonResource {
   @Produces("application/json")
   public List<Model> getModels() {
     return MintVocabularyJSON.get().getModels();
+  }
+  
+  @GET
+  @Path("config")
+  @Produces("application/json")
+  public HashMap<String, Object> getConfig() {
+    return Config.get().getPropertiesMap();
   }
   
   @GET

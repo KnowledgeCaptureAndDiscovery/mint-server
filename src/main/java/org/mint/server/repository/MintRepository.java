@@ -7,6 +7,7 @@ import org.mint.server.classes.EnsembleSpecification;
 import org.mint.server.classes.InterventionSpecification;
 import org.mint.server.classes.Region;
 import org.mint.server.classes.Task;
+import org.mint.server.classes.graph.GVariable;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.question.ModelingQuestion;
 import org.mint.server.classes.workflow.ModelGraph;
@@ -54,10 +55,11 @@ public interface MintRepository {
   public void deleteDataSpecification(String questionid, String dsid);
   
   // Workflow Composition / Planning
-  public ArrayList<WorkflowSolution> createWorkflowSolutions(VariableGraph graph, 
-      DataSpecification data_specification);
-  public ArrayList<WorkflowTemplate> createWorkflows(VariableGraph graph, ModelGraph model_graph, 
-      DataSpecification data_specification);
+  public ArrayList<WorkflowSolution> createWorkflowSolutions(
+      ArrayList<String> drivingVariables,
+      ArrayList<String> responseVariables,
+      VariableGraph cag,
+      DataSpecification ds);
   
   // InterventionSpecification (? Can this be represented by data specification above ? )
   public ArrayList<InterventionSpecification> listInterventionSpecifications(String taskid);

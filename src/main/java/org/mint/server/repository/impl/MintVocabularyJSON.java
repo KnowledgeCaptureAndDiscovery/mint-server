@@ -2,6 +2,7 @@ package org.mint.server.repository.impl;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -18,11 +19,16 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.mint.server.classes.Dataset;
 import org.mint.server.classes.Region;
 import org.mint.server.classes.StandardName;
+import org.mint.server.classes.graph.GVariable;
+import org.mint.server.classes.graph.Relation;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.model.Model;
 import org.mint.server.classes.model.ModelIO;
 import org.mint.server.classes.model.ModelType;
 import org.mint.server.classes.model.ModelVariable;
+import org.mint.server.classes.rawcag.CagEdge;
+import org.mint.server.classes.rawcag.CagVariable;
+import org.mint.server.classes.rawcag.RawCAG;
 import org.mint.server.classes.vocabulary.EventType;
 import org.mint.server.classes.vocabulary.InterventionType;
 import org.mint.server.classes.vocabulary.QuestionTemplate;
@@ -49,6 +55,7 @@ public class MintVocabularyJSON implements MintVocabulary {
   String MODELS_FILE = "models.json";
   String DATASETS_FILE = "datasets.json";
   String STDNAMES_FILE = "standard_names.json";
+  String RAWCAGS_DIR = "rawCags";
   
   LinkedHashMap<String, Region> regions;
   LinkedHashMap<String, Region> allRegions;
@@ -61,6 +68,7 @@ public class MintVocabularyJSON implements MintVocabulary {
   LinkedHashMap<String, WorkflowPointer> workflows;
   LinkedHashMap<String, Model> models;
   LinkedHashMap<String, Dataset> datasets;
+  LinkedHashMap<String, RawCAG> cags;
   
   ObjectMapper mapper;
 
@@ -84,6 +92,7 @@ public class MintVocabularyJSON implements MintVocabulary {
     workflows = new LinkedHashMap<String, WorkflowPointer>();
     models = new LinkedHashMap<String, Model>();
     datasets = new LinkedHashMap<String, Dataset>();
+    cags = new LinkedHashMap<String, RawCAG>();
     
     setConfiguration();
     load();
@@ -187,6 +196,14 @@ public class MintVocabularyJSON implements MintVocabulary {
           new FileInputStream(this.getFullPath(DATASETS_FILE)), dataListType);
       this.setDatasets(dataList);
       
+      // Load registered raw cags
+      this.cags = new LinkedHashMap<String, RawCAG>();         
+      File cagsdir = new File(this.getFullPath(RAWCAGS_DIR));
+      for(File f : FileUtils.listFiles(cagsdir, TrueFileFilter.TRUE, TrueFileFilter.TRUE)) {
+        RawCAG cag = this.mapper.readValue(
+            new FileInputStream(f.getAbsolutePath()), RawCAG.class);
+        this.cags.put(cag.getName(), cag);
+      }
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -294,6 +311,68 @@ public class MintVocabularyJSON implements MintVocabulary {
     model.setInputs(new ArrayList<ModelIO>(inputs.values()));
     model.setOutputs(new ArrayList<ModelIO>(outputs.values()));
     return model;
+  }
+  
+  public VariableGraph convertRawCagToVariableGraph(String cagname) {
+    RawCAG cag = this.getRawCAG(cagname);
+    String graphid = this.server + "/common/graphs/" + cag.getName();
+    String graphfile = this.storage + "/common/graphs/" + cag.getName() + ".json";
+    
+    VariableGraph graph = this.getGraph(graphid);
+    if(graph != null)
+      return graph;
+    
+    graph = new VariableGraph();
+    graph.setID(graphid);
+    graph.setLabel(cag.getName());
+    
+    HashMap<String, GVariable> variables = new HashMap<String, GVariable>();
+    for(CagVariable v : cag.getVariables()) {
+      GVariable gv = new GVariable();
+      gv.setLabel(v.getName());
+      gv.setID(graphid + "#" + v.getName());
+      if(v.getAlignment() != null) {
+        ArrayList<String> standard_names = new ArrayList<String>();
+        String cname = null;
+        for(ArrayList<Object> items : v.getAlignment()) {
+          String stdname = items.get(0).toString();
+          String tcname = this.getCanonicalName(stdname);
+          if(tcname != null)
+            cname = tcname;
+          standard_names.add(stdname);
+        }
+        if(standard_names.size() > 0 && cname == null) {
+          cname = standard_names.get(0);
+        }
+        if(cname != null) {
+          gv.setCanonical_name(cname);
+        }
+        gv.setStandard_names(standard_names);
+      }
+      variables.put(v.getName(), gv);
+    }
+    
+    ArrayList<Relation> links = new ArrayList<Relation>();
+    for(CagEdge edge : cag.getEdge_data()) {
+      GVariable from = variables.get(edge.getSource());
+      GVariable to = variables.get(edge.getTarget());
+      if(from != null && to != null) {
+        Relation link = new Relation();
+        link.setFrom(from.getID());
+        link.setTo(to.getID());
+        links.add(link);
+      }
+    }
+    graph.setVariables(new ArrayList<GVariable>(variables.values()));
+    graph.setLinks(links);
+    try {
+      this.mapper.writerWithDefaultPrettyPrinter().writeValue(
+          new FileOutputStream(graphfile), graph);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    this.graphs.put(graph.getID(), graph);
+    return graph;
   }
 
   public ArrayList<Region> getRegions() {
@@ -453,6 +532,20 @@ public class MintVocabularyJSON implements MintVocabulary {
   @Override
   public VariableGraph getGraph(String id) {
     return this.graphs.get(id);
+  }
+
+  public ArrayList<RawCAG> getRawCAGs() {
+    return new ArrayList<RawCAG>(this.cags.values());
+  }
+
+  public void setRawCAGs(ArrayList<RawCAG> cags) {
+    for(RawCAG cag : cags)
+      this.cags.put(cag.getName(), cag);
+  }
+  
+  @Override
+  public RawCAG getRawCAG(String id) {
+    return this.cags.get(id);
   }
 
 }

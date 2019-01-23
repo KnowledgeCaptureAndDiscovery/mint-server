@@ -36,6 +36,6 @@ public class PlannerResource {
     VariableGraph graph = repo.getVariableGraph(graphname);
     String dsuri = repo.getDataSpecificationURI(questionid, dsid);
     DataSpecification ds = repo.getDataSpecificationDetails(questionid, dsuri);
-    return repo.createWorkflowSolutions(graph, ds);
+    return repo.createWorkflowSolutions(question.getDrivingVariables(), question.getResponseVariables(), graph, ds);
   }
 }

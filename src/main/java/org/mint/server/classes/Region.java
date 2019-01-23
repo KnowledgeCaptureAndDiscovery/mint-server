@@ -7,6 +7,7 @@ public class Region extends URIEntity {
 
   String boundaryVector;
   
+  String graph;
   ArrayList<Region> subRegions;
   String parentRegion;
   String placeholder;
@@ -30,6 +31,14 @@ public class Region extends URIEntity {
     super.setID(id);
   }
   
+  public String getGraph() {
+    return graph;
+  }
+
+  public void setGraph(String graph) {
+    this.graph = graph;
+  }
+
   public String getBoundaryVector() {
     return boundaryVector;
   }

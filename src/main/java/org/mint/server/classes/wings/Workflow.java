@@ -19,10 +19,8 @@ public class Workflow extends IdEntity {
   HashMap<String, Role> outputRoles;
   
   public HashMap<String, String> props;
-  
-  // Metadata metadata;
-  // Rules rules
-  // Properties props
+  WorkflowMetadata metadata;
+
   
   public Workflow() {}
   
@@ -34,6 +32,7 @@ public class Workflow extends IdEntity {
     this.inputRoles = new HashMap<String, Role>();
     this.outputRoles = new HashMap<String, Role>();
     this.props = new HashMap<String, String>();
+    this.metadata = new WorkflowMetadata();
   }
   
   @JsonGetter("Links")
@@ -175,5 +174,13 @@ public class Workflow extends IdEntity {
 
   public void setProps(HashMap<String, String> props) {
     this.props = props;
+  }
+
+  public WorkflowMetadata getMetadata() {
+    return metadata;
+  }
+
+  public void setMetadata(WorkflowMetadata metadata) {
+    this.metadata = metadata;
   }
 }

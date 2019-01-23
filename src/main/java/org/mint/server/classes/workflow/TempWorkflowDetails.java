@@ -2,20 +2,21 @@ package org.mint.server.classes.workflow;
 
 public class TempWorkflowDetails {
 
-    String model_graph;
-    String wings_workflow;
+    String modelGraph;
+    String wingsWorkflow;
     
-    public String getModel_graph() {
-      return model_graph;
+    public String getModelGraph() {
+      return modelGraph;
     }
-    public void setModel_graph(String model_graph) {
-      this.model_graph = model_graph;
+    public void setModelGraph(String modelGraph) {
+      this.modelGraph = modelGraph;
     }
-    public String getWings_workflow() {
-      return wings_workflow;
+    public String getWingsWorkflow() {
+      return wingsWorkflow;
     }
-    public void setWings_workflow(String wings_workflow) {
-      this.wings_workflow = wings_workflow;
+    public void setWingsWorkflow(String wingsWorkflow) {
+      this.wingsWorkflow = wingsWorkflow;
     }
+    
     
 }
