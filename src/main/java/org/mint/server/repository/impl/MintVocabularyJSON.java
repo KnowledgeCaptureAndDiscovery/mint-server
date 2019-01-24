@@ -44,18 +44,32 @@ import com.fasterxml.jackson.databind.type.CollectionType;
 public class MintVocabularyJSON implements MintVocabulary {
   String server, storage;
 
-  String COMMON_DIR = "common";
-  String GRAPHS_DIR = "graphs";
-  String EVENTS_FILE = "event_types.json";
-  String REGIONS_FILE = "regions.json";
-  String TASKS_FILE = "task_types.json";
-  String QUESTIONS_FILE = "question_templates.json";
-  String INTERVENTIONS_FILE = "intervention_types.json";
-  String WORKFLOWS_FILE = "workflows.json";  
-  String MODELS_FILE = "models.json";
-  String DATASETS_FILE = "datasets.json";
-  String STDNAMES_FILE = "standard_names.json";
-  String RAWCAGS_DIR = "rawCags";
+
+  public String COMMON = "common";
+  public String GRAPHS = "graphs";
+  public String RAWCAGS = "rawCags";
+  public String EVENTS = "event_types";
+  public String REGIONS = "regions";
+  public String TASKS = "task_types";
+  public String QUESTIONS = "question_templates";
+  public String INTERVENTIONS = "intervention_types";
+  public String WORKFLOWS = "workflows";  
+  public String MODELS = "models";
+  public String DATASETS = "datasets";
+  public String STDNAMES = "standard_names";
+  
+  String COMMON_DIR = COMMON;
+  String GRAPHS_DIR = GRAPHS;
+  String RAWCAGS_DIR = RAWCAGS;
+  String EVENTS_FILE = EVENTS + ".json";
+  String REGIONS_FILE = REGIONS + ".json";
+  String TASKS_FILE = TASKS + ".json";
+  String QUESTIONS_FILE = QUESTIONS + ".json";
+  String INTERVENTIONS_FILE = INTERVENTIONS + ".json";
+  String WORKFLOWS_FILE = WORKFLOWS + ".json";  
+  String MODELS_FILE = MODELS + ".json";
+  String DATASETS_FILE = DATASETS + ".json";
+  String STDNAMES_FILE = STDNAMES + ".json";
   
   LinkedHashMap<String, Region> regions;
   LinkedHashMap<String, Region> allRegions;
@@ -118,6 +132,10 @@ public class MintVocabularyJSON implements MintVocabulary {
   
   private String getFullPath(String path) {
     return this.storage + File.separator + COMMON_DIR + File.separator + path;
+  }
+  
+  public String getResourceURI(String name, String dirname) {
+    return this.server + "/" + COMMON_DIR + "/" + dirname + "/" + name;
   }
   
   private void load() {

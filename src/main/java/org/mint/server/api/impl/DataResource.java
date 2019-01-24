@@ -35,8 +35,8 @@ public class DataResource {
   @GET
   @Path("{dsid}")
   @Produces("application/json")
-  public DataSpecification getDataSpecification(@PathParam("dsid") String dsid) {
-    dsid = request.getRequestURL().toString();
+  public DataSpecification getDataSpecification(@PathParam("dsid") String dsname) {
+    String dsid = MINTRepositoryJSON.get(userid).getDataSpecificationURI(questionid, dsname);
     return MINTRepositoryJSON.get(userid).getDataSpecificationDetails(questionid, dsid);
   }
   
@@ -52,8 +52,8 @@ public class DataResource {
   @DELETE
   @Path("{dsid}")
   @Produces("application/json")
-  public void deleteDataSpecification(@PathParam("dsid") String dsid) {
-    dsid = request.getRequestURL().toString();
+  public void deleteDataSpecification(@PathParam("dsid") String dsname) {
+    String dsid = MINTRepositoryJSON.get(userid).getDataSpecificationURI(questionid, dsname);    
     MINTRepositoryJSON.get(userid).deleteDataSpecification(questionid, dsid);
   }
   

@@ -49,9 +49,10 @@ public class CommonResource {
   
   @GET
   @Path("regions/{regionid}")
-  public Region getRegion(@PathParam("regionid") String regionid) {
-    regionid = request.getRequestURL().toString(); // Need the full url
-    return MintVocabularyJSON.get().getRegion(regionid);
+  public Region getRegion(@PathParam("regionid") String region_name) {
+    MintVocabularyJSON vocab = MintVocabularyJSON.get();
+    String regionid = vocab.getResourceURI(region_name, vocab.REGIONS);
+    return vocab.getRegion(regionid);
   }
 
   @GET
@@ -66,17 +67,19 @@ public class CommonResource {
   
   @GET
   @Path("graphs/{graphid}")
-  public VariableGraph getGraph(@PathParam("graphid") String graphid) {
-    graphid = request.getRequestURL().toString();
+  public VariableGraph getGraph(@PathParam("graphid") String gname) {
+    MintVocabularyJSON vocab = MintVocabularyJSON.get();
+    String graphid = vocab.getResourceURI(gname, vocab.GRAPHS);
     return MintVocabularyJSON.get().getGraph(graphid);
   }
   
   @GET
   @Path("rawcags")
   public ArrayList<URIEntity> listRawCAGS() {
+    MintVocabularyJSON vocab = MintVocabularyJSON.get();
     ArrayList<URIEntity> cagIds = new ArrayList<URIEntity>();
-    for(RawCAG cag : MintVocabularyJSON.get().getRawCAGs()) {
-      String cagid = request.getRequestURL().toString() + "/" + cag.getName();
+    for(RawCAG cag : vocab.getRawCAGs()) {
+      String cagid = vocab.getResourceURI(cag.getName(), vocab.RAWCAGS);
       cagIds.add(new URIEntity(cagid, cag.getName()));
     }
     return cagIds;
@@ -105,8 +108,9 @@ public class CommonResource {
   @Path("task_types/{task_type}")
   @Produces("application/json")
   public TaskType getTaskType(@PathParam("task_type") String task_type) {
-    task_type = request.getRequestURL().toString();
-    return MintVocabularyJSON.get().getTaskType(task_type);
+    MintVocabularyJSON vocab = MintVocabularyJSON.get();
+    String task_type_id = vocab.getResourceURI(task_type, vocab.TASKS);
+    return vocab.getTaskType(task_type_id);
   }  
   
   @GET
@@ -119,9 +123,10 @@ public class CommonResource {
   @GET
   @Path("question_templates/{templateid}")
   @Produces("application/json")
-  public QuestionTemplate getQuestionTemplate(@PathParam("question_template") String templateid) {
-    templateid = request.getRequestURL().toString();
-    return MintVocabularyJSON.get().getQuestionTemplate(templateid);
+  public QuestionTemplate getQuestionTemplate(@PathParam("question_template") String template_name) {
+    MintVocabularyJSON vocab = MintVocabularyJSON.get();
+    String templateid = vocab.getResourceURI(template_name, vocab.QUESTIONS);
+    return vocab.getQuestionTemplate(templateid);
   }
 
   @GET
@@ -141,9 +146,10 @@ public class CommonResource {
   @GET
   @Path("event_types/{event_type}")
   @Produces("application/json")
-  public EventType getEventTypes(@PathParam("event_type") String typeid) {
-    typeid = request.getRequestURL().toString();
-    return MintVocabularyJSON.get().getEventType(typeid);
+  public EventType getEventTypes(@PathParam("event_type") String typename) {
+    MintVocabularyJSON vocab = MintVocabularyJSON.get();
+    String typeid = vocab.getResourceURI(typename, vocab.EVENTS);
+    return vocab.getEventType(typeid);
   }
   
   @GET

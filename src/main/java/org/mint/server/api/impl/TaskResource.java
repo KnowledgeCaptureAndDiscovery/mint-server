@@ -35,8 +35,8 @@ public class TaskResource {
   @GET
   @Path("{taskid}")
   @Produces("application/json")
-  public Task getTask(@PathParam("taskid") String taskid) {
-    taskid = request.getRequestURL().toString();
+  public Task getTask(@PathParam("taskid") String tname) {
+    String taskid = MINTRepositoryJSON.get(userid).getTaskURI(questionid, tname);
     return MINTRepositoryJSON.get(userid).getTaskDetails(questionid, taskid);
   }
   
@@ -52,8 +52,8 @@ public class TaskResource {
   @DELETE
   @Path("{taskid}")
   @Produces("application/json")
-  public void deleteTask(@PathParam("taskid") String taskid) {
-    taskid = request.getRequestURL().toString();
+  public void deleteTask(@PathParam("taskid") String tname) {
+    String taskid = MINTRepositoryJSON.get(userid).getTaskURI(questionid, tname);
     MINTRepositoryJSON.get(userid).deleteTask(questionid, taskid);
   }
   

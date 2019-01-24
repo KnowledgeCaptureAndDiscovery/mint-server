@@ -36,8 +36,8 @@ public class QuestionResource {
   
   @GET
   @Path("{questionid}")
-  public ModelingQuestion getModelingQuestion(@PathParam("questionid") String questionid) {
-    questionid = request.getRequestURL().toString(); // Need the full url
+  public ModelingQuestion getModelingQuestion(@PathParam("questionid") String qname) {
+    String questionid = MINTRepositoryJSON.get(userid).getQuestionURI(qname);
     return MINTRepositoryJSON.get(userid).getModelingQuestionDetails(questionid);
   }
   
@@ -53,8 +53,8 @@ public class QuestionResource {
   @DELETE
   @Path("{questionid}")
   @Produces("application/json")
-  public void deleteModelingQuestion(@PathParam("taskid") String questionid) {
-    questionid = request.getRequestURL().toString();
+  public void deleteModelingQuestion(@PathParam("questionid") String qname) {
+    String questionid = MINTRepositoryJSON.get(userid).getQuestionURI(qname);
     MINTRepositoryJSON.get(userid).deleteModelingQuestion(questionid);
   }
   
