@@ -96,6 +96,10 @@ public class Config {
     
     HashMap<String, String> wingsProps = new HashMap<String, String>();
     wingsProps.put("server", this.props.getString("wings.server"));
+    if(this.props.getString("wings.internal_server") != null)
+      wingsProps.put("internal_server", this.props.getString("wings.internal_server"));
+    else
+      wingsProps.put("internal_server", this.props.getString("wings.server"));
     wingsProps.put("domain", this.props.getString("wings.domain"));
     wingsProps.put("gendomain", this.props.getString("wings.gendomain"));
     wingsProps.put("storage", this.props.getString("wings.storage"));
