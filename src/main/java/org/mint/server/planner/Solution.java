@@ -104,7 +104,7 @@ public class Solution implements Comparable<Solution> {
         String hashid = this.vocabulary.getCanonicalName(v.getStandard_name());
         if(this.varhash.containsKey(hashid)) {
           GVariable gvar = this.varhash.get(hashid);
-          VariableProvenance prov = new VariableProvenance(c.getID(), ip.getID(), v.getMetadata(), true);
+          VariableProvenance prov = new VariableProvenance(c.getID(), ip.getID(), ip.getType(), v.getUnits(), true);
           ArrayList<VariableProvenance> provlist = gvar.getProvenance();
           if(provlist == null)
             provlist = new ArrayList<VariableProvenance>();
@@ -125,7 +125,7 @@ public class Solution implements Comparable<Solution> {
         String hashid = this.vocabulary.getCanonicalName(v.getStandard_name());
         GVariable newv;
         if(this.varhash.containsKey(hashid)) {
-          VariableProvenance prov = new VariableProvenance(c.getID(), op.getID(), v.getMetadata(), false);
+          VariableProvenance prov = new VariableProvenance(c.getID(), op.getID(), op.getType(), v.getUnits(), false);
           newv = this.varhash.get(hashid);
           ArrayList<VariableProvenance> provlist = newv.getProvenance();
           if(provlist == null)
@@ -185,7 +185,7 @@ public class Solution implements Comparable<Solution> {
     // Create new variable
     String vid = graphid + "#" + v.getLocalName();
     ArrayList<VariableProvenance> provenance = new ArrayList<VariableProvenance>();
-    provenance.add(new VariableProvenance(c.getID(), f.getID(), v.getMetadata(), isinput));
+    provenance.add(new VariableProvenance(c.getID(), f.getID(), f.getType(), v.getUnits(), isinput));
     return this.getVariableFromModelVariable(vid, v, provenance);
   }
 
@@ -567,8 +567,8 @@ public class Solution implements Comparable<Solution> {
         tpl.addLink(link);
       }
       else if(l.getType() == Type.MODEL) {
-        String frommeta = fromprov.getMetadata().toString();
-        String tometa = toprov.getMetadata().toString();
+        String frommeta = fromprov.getUnits();
+        String tometa = toprov.getUnits();
         if(!frommeta.equals(tometa)) {
           // TODO: Add transformation workflows (from Data Catalog ?)
           

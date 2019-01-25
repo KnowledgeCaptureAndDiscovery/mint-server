@@ -15,6 +15,7 @@ public class Region extends URIEntity {
   String description;
   Float latitude;
   Float longitude;
+  ArrayList<Float> bbox;
   Integer zoom;
   
   public Region() {
@@ -24,6 +25,7 @@ public class Region extends URIEntity {
   public Region(String id, String name) {
     super(id, name);
     subRegions = new ArrayList<Region>();
+    bbox = new ArrayList<Float>();
   }
   
   @Override
@@ -117,5 +119,13 @@ public class Region extends URIEntity {
 
   public void setZoom(Integer zoom) {
     this.zoom = zoom;
+  }
+
+  public ArrayList<Float> getBbox() {
+    return bbox;
+  }
+
+  public void setBbox(ArrayList<Float> bbox) {
+    this.bbox = bbox;
   }
 }

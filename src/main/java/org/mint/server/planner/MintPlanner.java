@@ -32,6 +32,8 @@ public class MintPlanner {
     String userid = ds.getID().replaceAll(".*/users/", "").replaceAll("/.*", "");
     MintVocabularyJSON vocabulary = MintVocabularyJSON.get();
     
+    // TODO: Use File Types here too
+
     // Initialze initial list of variables
     ArrayList<GVariable> variables = new ArrayList<GVariable>();
     for(GVariable gvar : graph.getVariables()) {

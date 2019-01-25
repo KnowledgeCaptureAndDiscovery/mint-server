@@ -1,21 +1,20 @@
 package org.mint.server.classes.graph;
 
-import java.util.HashMap;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class VariableProvenance {
   String model;
   String file_id;
-  
-  HashMap<String, String> metadata;
+  String file_type;
+  String units;
   
   boolean isinput;
   
-  public VariableProvenance(String model, String file_id, HashMap<String, String> metadata, boolean isinput) {
+  public VariableProvenance(String model, String file_id, String file_type, String units, boolean isinput) {
     this.model = model;
     this.file_id = file_id;
-    this.metadata = metadata;
+    this.file_type = file_type;
+    this.units = units;
     this.isinput = isinput;
   }
   
@@ -31,11 +30,17 @@ public class VariableProvenance {
   public void setFile_id(String file_id) {
     this.file_id = file_id;
   }
-  public HashMap<String, String> getMetadata() {
-    return metadata;
+  public String getFile_type() {
+    return file_type;
   }
-  public void setMetadata(HashMap<String, String> metadata) {
-    this.metadata = metadata;
+  public void setFile_type(String file_type) {
+    this.file_type = file_type;
+  }
+  public String getUnits() {
+    return units;
+  }
+  public void setUnits(String units) {
+    this.units = units;
   }
   public boolean isIsinput() {
     return isinput;

@@ -3,7 +3,6 @@ package org.mint.server.classes.question;
 import java.util.ArrayList;
 
 import org.mint.server.classes.URIEntity;
-import org.mint.server.classes.graph.GVariable;
 import org.mint.server.classes.question.template.TemplateTimePeriod;
 
 public class ModelingQuestion extends URIEntity {

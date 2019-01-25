@@ -306,7 +306,9 @@ public class MintVocabularyJSON implements MintVocabulary {
     for(HashMap<String, String> kv: kvlist) {
       String ioprop = kv.get("prop");
       String ioid = kv.get("io");
+      String iotype = kv.get("type");
       String vid = kv.get("vp");
+      String units = kv.get("units");
       String stdname = kv.get("st");
       if(stdname == null)
         stdname = vid.substring(vid.indexOf("#")+1);
@@ -316,8 +318,11 @@ public class MintVocabularyJSON implements MintVocabulary {
       if(io == null)
         io = new ModelIO(ioid);
       
+      io.setType(iotype);
+      
       ModelVariable mv = new ModelVariable();
       mv.setID(vid);
+      mv.setUnits(units);
       mv.setStandard_name(stdname);
       io.addVariable(mv);
       if(isinput)

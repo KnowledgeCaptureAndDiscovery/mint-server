@@ -7,6 +7,7 @@ import org.mint.server.classes.URIEntity;
 public class ModelIO extends URIEntity {
   private static final long serialVersionUID = 5575376700347352778L;
   
+  String type;
   ArrayList<ModelVariable> variables;
 
   public ModelIO(String id) {
@@ -24,5 +25,13 @@ public class ModelIO extends URIEntity {
   
   public void addVariable(ModelVariable variable) {
     this.variables.add(variable);
+  }
+
+  public String getType() {
+    return type;
+  }
+
+  public void setType(String type) {
+    this.type = type;
   }
 }
