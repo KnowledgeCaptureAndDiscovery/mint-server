@@ -22,7 +22,6 @@ import org.mint.server.classes.rawcag.RawCAG;
 import org.mint.server.classes.vocabulary.TaskType;
 import org.mint.server.classes.vocabulary.WorkflowPointer;
 import org.mint.server.repository.MintRepository;
-import org.mint.server.repository.impl.MINTRepositoryJSON;
 import org.mint.server.repository.impl.MintVocabularyJSON;
 import org.mint.server.util.Config;
 

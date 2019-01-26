@@ -26,6 +26,7 @@ public class Task extends URIEntity {
     for(ActivityType atype : taskType.getActivityTypes()) {
       Activity activity = new Activity();
       activity.setLabel(atype.getLabel());
+      activity.setRequired(atype.isRequired());
       this.activities.put(atype.getID(), activity);
     }
   }

@@ -411,10 +411,12 @@ public class MintVocabularyJSON implements MintVocabulary {
   
   public String addVariableGraph(VariableGraph graph) {
     this.writeGraph(graph);
+    this.graphs.put(graph.getID(), graph);
     return graph.getID();
   }
   
   public void updateVariableGraph(VariableGraph graph) {
+    this.graphs.put(graph.getID(), graph);
     this.writeGraph(graph);
   }
   
