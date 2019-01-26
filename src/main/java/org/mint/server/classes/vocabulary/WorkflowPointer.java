@@ -1,40 +1,49 @@
 package org.mint.server.classes.vocabulary;
 
-import org.mint.server.classes.URIEntity;
+import java.util.ArrayList;
 
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonSetter;
+import org.mint.server.classes.URIEntity;
 
 public class WorkflowPointer extends URIEntity {
   private static final long serialVersionUID = -8065390873029346462L;
   
-  enum Type { DATA_COMPARISON, DATA_GENERATION, MODEL_CALIBRATION };
+  enum WorkflowType { DATA_COMPARISON, DATA_GENERATION, DATA_EXPLORATION, MODEL_CALIBRATION, MODELING };
   
-  Type type;
-  String input_variable;
-  String output_variable;
+  WorkflowType type;
+  String userid;
+  String domain;
+  String workflow;
+  ArrayList<String> components;
   
-  public Type getType() {
+  public WorkflowType getType() {
     return type;
   }
-  public void setType(Type type) {
+  public void setType(WorkflowType type) {
     this.type = type;
   }
-  @JsonGetter("input_variable")
-  public String getInputVariable() {
-    return input_variable;
+  public String getDomain() {
+    return domain;
   }
-  @JsonSetter("input_variable")
-  public void setInputVariable(String input_variable) {
-    this.input_variable = input_variable;
+  public void setDomain(String domain) {
+    this.domain = domain;
   }
-  @JsonGetter("output_variable")
-  public String getOutputVariable() {
-    return output_variable;
+  public String getWorkflow() {
+    return workflow;
   }
-  @JsonSetter("output_variable")
-  public void setOutputVariable(String output_variable) {
-    this.output_variable = output_variable;
+  public void setWorkflow(String workflow) {
+    this.workflow = workflow;
+  }
+  public String getUserid() {
+    return userid;
+  }
+  public void setUserid(String userid) {
+    this.userid = userid;
+  }
+  public ArrayList<String> getComponents() {
+    return components;
+  }
+  public void setComponents(ArrayList<String> components) {
+    this.components = components;
   }
 
 }

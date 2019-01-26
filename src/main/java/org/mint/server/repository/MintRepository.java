@@ -7,11 +7,8 @@ import org.mint.server.classes.EnsembleSpecification;
 import org.mint.server.classes.InterventionSpecification;
 import org.mint.server.classes.Region;
 import org.mint.server.classes.Task;
-import org.mint.server.classes.graph.GVariable;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.question.ModelingQuestion;
-import org.mint.server.classes.workflow.ModelGraph;
-import org.mint.server.classes.workflow.WorkflowTemplate;
 import org.mint.server.planner.WorkflowSolution;
 
 public interface MintRepository {
@@ -58,6 +55,7 @@ public interface MintRepository {
   public ArrayList<WorkflowSolution> createWorkflowSolutions(
       ArrayList<String> drivingVariables,
       ArrayList<String> responseVariables,
+      ArrayList<String> models,
       VariableGraph cag,
       DataSpecification ds);
   

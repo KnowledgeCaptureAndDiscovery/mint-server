@@ -45,7 +45,8 @@ public class Solution implements Comparable<Solution> {
       // Copy graph variable
       GVariable nv = new GVariable(v);
       this.variables.add(nv);
-      this.varhash.put(nv.getCanonical_name(), nv);
+      String cname = this.vocabulary.getCanonicalName(nv.getStandard_names());
+      this.varhash.put(cname, nv);
       v.setProvenance(new ArrayList<VariableProvenance>());
     }
     this.models = new ArrayList<Model>();
@@ -59,7 +60,8 @@ public class Solution implements Comparable<Solution> {
       // Deep copy solution variable
       GVariable nv = new GVariable(v);
       this.variables.add(nv);
-      this.varhash.put(nv.getCanonical_name(), nv);
+      String cname = this.vocabulary.getCanonicalName(nv.getStandard_names());
+      this.varhash.put(cname, nv);
     }
     this.models = new ArrayList<Model>(solution.getModels());
   }
@@ -173,7 +175,6 @@ public class Solution implements Comparable<Solution> {
     newv.setID(vid);
     newv.setLabel(v.getLabel());
     newv.setStandard_names(snames);
-    newv.setCanonical_name(cname);
     newv.setLabel(v.getLabel());
     newv.setPosition(pos);
     newv.setProvenance(new ArrayList<VariableProvenance>(provenance));
@@ -334,8 +335,8 @@ public class Solution implements Comparable<Solution> {
     for(WorkflowLink l : wflow.getLinks()) {
       Variable var = varid_hash.get(l.getVariable());
       GVariable v = gvarid_hash.get(l.getVariable());
+      String roleid = this.vocabulary.getCanonicalName(v.getStandard_names());
       if(l.getType() == Type.DATA) {
-        String roleid = v.getCanonical_name();
         Node node = node_hash.get(l.getTo());
         String portid = node.getId() + "_in_" + roleid;
         String linkid = portid + "_to";
@@ -346,7 +347,6 @@ public class Solution implements Comparable<Solution> {
         tpl.addLink(link);
       }
       else if(l.getType() == Type.OUTPUT) {
-        String roleid = v.getCanonical_name();
         Node node = node_hash.get(l.getFrom());
         String portid = node.getId() + "_out_" + roleid;
         String linkid = portid + "_from";
@@ -357,7 +357,6 @@ public class Solution implements Comparable<Solution> {
         tpl.addLink(link);
       }
       else if(l.getType() == Type.MODEL) {
-        String roleid = v.getCanonical_name();
         Node fromNode = node_hash.get(l.getFrom());
         Node toNode = node_hash.get(l.getTo());
         Port fromPort = port_hash.get(fromNode.getId() + "_out_" + roleid);
@@ -772,7 +771,8 @@ public class Solution implements Comparable<Solution> {
       Variable gvar = gvars.get(tns + v.getLocalName());
       if(gvar != null)
         nv.setCategory(gvar.getCategory());
-      cname_hash.put(nv.getCanonical_name(), nv);
+      String cname = this.vocabulary.getCanonicalName(nv.getStandard_names());
+      cname_hash.put(cname, nv);
       varid_hash.put(nv.getID(), nv);
       graph.getVariables().add(nv);
     }

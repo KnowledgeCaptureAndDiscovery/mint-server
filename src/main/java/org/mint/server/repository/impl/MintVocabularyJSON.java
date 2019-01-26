@@ -11,12 +11,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.configuration.plist.PropertyListConfiguration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.mint.server.classes.Dataset;
 import org.mint.server.classes.Region;
 import org.mint.server.classes.StandardName;
 import org.mint.server.classes.graph.GVariable;
@@ -29,9 +30,6 @@ import org.mint.server.classes.model.ModelVariable;
 import org.mint.server.classes.rawcag.CagEdge;
 import org.mint.server.classes.rawcag.CagVariable;
 import org.mint.server.classes.rawcag.RawCAG;
-import org.mint.server.classes.vocabulary.EventType;
-import org.mint.server.classes.vocabulary.InterventionType;
-import org.mint.server.classes.vocabulary.QuestionTemplate;
 import org.mint.server.classes.vocabulary.TaskType;
 import org.mint.server.classes.vocabulary.WorkflowPointer;
 import org.mint.server.repository.MintVocabulary;
@@ -74,14 +72,10 @@ public class MintVocabularyJSON implements MintVocabulary {
   LinkedHashMap<String, Region> regions;
   LinkedHashMap<String, Region> allRegions;
   LinkedHashMap<String, VariableGraph> graphs;
-  LinkedHashMap<String, EventType> eventTypes;
-  LinkedHashMap<String, InterventionType> interventionTypes;
-  LinkedHashMap<String, QuestionTemplate> questionTemplates;
   LinkedHashMap<String, TaskType> taskTypes;
   LinkedHashMap<String, StandardName> standardNames;
   LinkedHashMap<String, WorkflowPointer> workflows;
   LinkedHashMap<String, Model> models;
-  LinkedHashMap<String, Dataset> datasets;
   LinkedHashMap<String, RawCAG> cags;
   
   ObjectMapper mapper;
@@ -98,14 +92,10 @@ public class MintVocabularyJSON implements MintVocabulary {
     regions = new LinkedHashMap<String, Region>();
     allRegions = new LinkedHashMap<String, Region>();
     graphs = new LinkedHashMap<String, VariableGraph>();
-    eventTypes = new LinkedHashMap<String, EventType>();
-    interventionTypes = new LinkedHashMap<String, InterventionType>();
-    questionTemplates = new LinkedHashMap<String, QuestionTemplate>();
     taskTypes = new LinkedHashMap<String, TaskType>();
     standardNames = new LinkedHashMap<String, StandardName>();
     workflows = new LinkedHashMap<String, WorkflowPointer>();
     models = new LinkedHashMap<String, Model>();
-    datasets = new LinkedHashMap<String, Dataset>();
     cags = new LinkedHashMap<String, RawCAG>();
     
     setConfiguration();
@@ -113,6 +103,15 @@ public class MintVocabularyJSON implements MintVocabulary {
   }
   
   public void reload() {
+    regions.clear();
+    allRegions.clear();
+    graphs.clear();
+    taskTypes.clear();
+    standardNames.clear();
+    workflows.clear();
+    models.clear();
+    cags.clear();
+    
     this.load();
   }
   
@@ -140,49 +139,41 @@ public class MintVocabularyJSON implements MintVocabulary {
   
   private void load() {
     try {
-      // Load vocabulary files
+      // Load vocabulary
+      
+      // Get all regions
       CollectionType regionListType = mapper.getTypeFactory()
           .constructCollectionType(ArrayList.class, Region.class);      
       ArrayList<Region> regions = this.mapper.readValue(
           new FileInputStream(this.getFullPath(REGIONS_FILE)), regionListType);
       this.setRegions(regions);
       
-      CollectionType eventListType = mapper.getTypeFactory()
-          .constructCollectionType(ArrayList.class, EventType.class);   
-      ArrayList<EventType> eventTypes = this.mapper.readValue(
-          new FileInputStream(this.getFullPath(EVENTS_FILE)), eventListType);
-      this.setEventTypes(eventTypes);
-
-      CollectionType interventionListType = mapper.getTypeFactory()
-          .constructCollectionType(ArrayList.class, InterventionType.class);   
-      ArrayList<InterventionType> interventionTypes = this.mapper.readValue(
-          new FileInputStream(this.getFullPath(INTERVENTIONS_FILE)), interventionListType);
-      this.setInterventionTypes(interventionTypes);
-      
-      CollectionType questionListType = mapper.getTypeFactory()
-          .constructCollectionType(ArrayList.class, QuestionTemplate.class);   
-      ArrayList<QuestionTemplate> questionTemplates = this.mapper.readValue(
-          new FileInputStream(this.getFullPath(QUESTIONS_FILE)), questionListType);
-      this.setQuestionTemplates(questionTemplates);
-      
+      // Get all task types
       CollectionType taskListType = mapper.getTypeFactory()
           .constructCollectionType(ArrayList.class, TaskType.class);   
       ArrayList<TaskType> taskTypes = this.mapper.readValue(
           new FileInputStream(this.getFullPath(TASKS_FILE)), taskListType);
       this.setTaskTypes(taskTypes);
       
+      // Get mapping of standard names to canonical names
       CollectionType stdnamesType = mapper.getTypeFactory()
           .constructCollectionType(ArrayList.class, StandardName.class);   
       ArrayList<StandardName> standardNames = this.mapper.readValue(
           new FileInputStream(this.getFullPath(STDNAMES_FILE)), stdnamesType);
       this.setStandardNames(standardNames);
       
-      /*CollectionType workflowListType = mapper.getTypeFactory()
-          .constructCollectionType(ArrayList.class, TaskType.class);   
-      ArrayList<WorkflowPointer> workflows = this.mapper.readValue(
-          new FileInputStream(this.getFullPath(WORKFLOWS_FILE)), workflowListType);
-      this.setWorkflows(workflows);*/
 
+      // Get workflow pointers (and 
+      CollectionType pointerListType = mapper.getTypeFactory()
+          .constructCollectionType(ArrayList.class, WorkflowPointer.class);   
+      ArrayList<WorkflowPointer> pointers = this.mapper.readValue(
+          new FileInputStream(this.getFullPath(WORKFLOWS_FILE)), pointerListType);
+      for(WorkflowPointer pointer : pointers) {
+        this.setWorkflowComponents(pointer);
+      }
+      this.setWorkflows(pointers);
+
+      
       // Load registered graphs
       this.graphs = new LinkedHashMap<String, VariableGraph>();         
       File graphdir = new File(this.getFullPath(GRAPHS_DIR));
@@ -192,27 +183,13 @@ public class MintVocabularyJSON implements MintVocabulary {
         this.graphs.put(graph.getID(), graph);
       }
       
+      
       // Load models from Model Catalog
       this.models = new LinkedHashMap<String, Model>();
       // Set models from Model Catalog
       ArrayList<Model> modelList = this.fetchModelsFromCatalog();
       this.setModels(modelList);
       
-      /*
-      // Test Model Catalog from JSON
-      CollectionType modelListType = mapper.getTypeFactory()
-          .constructCollectionType(ArrayList.class, Model.class);   
-      ArrayList<Model> modelList = this.mapper.readValue(
-          new FileInputStream(this.getFullPath(MODELS_FILE)), modelListType);
-      */
-      
-      // Load datasets from Data Catalog
-      // Test Data Catalog from JSON
-      CollectionType dataListType = mapper.getTypeFactory()
-          .constructCollectionType(ArrayList.class, Dataset.class);   
-      ArrayList<Dataset> dataList = this.mapper.readValue(
-          new FileInputStream(this.getFullPath(DATASETS_FILE)), dataListType);
-      this.setDatasets(dataList);
       
       // Load registered raw cags
       this.cags = new LinkedHashMap<String, RawCAG>();         
@@ -225,6 +202,31 @@ public class MintVocabularyJSON implements MintVocabulary {
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+  
+  
+  private void setWorkflowComponents(WorkflowPointer pointer) {
+    ArrayList<String> components = new ArrayList<String>();
+    String uri = Config.get().getProperties().getString("wings.server");
+    String wflowuri = uri + "/export/users/" + 
+        pointer.getUserid() + "/" +
+        pointer.getDomain() + "/workflows/" +
+        pointer.getWorkflow() + ".owl";
+    pointer.setID(wflowuri + "#" + pointer.getWorkflow());
+
+    try {
+      String xml = IOUtils.toString(new URI(wflowuri), StandardCharsets.UTF_8);
+      Pattern comp = Pattern.compile("hasComponentBinding .+#(.+?)\"");
+      for(String line : xml.split("\\n")) {
+        Matcher m = comp.matcher(line);
+        if(m.find()) {
+          components.add(m.group(1));
+        }
+      }
+    } catch (IOException | URISyntaxException e) {
+      e.printStackTrace();
+    }
+    pointer.setComponents(components);
   }
   
   @SuppressWarnings("unchecked")
@@ -356,19 +358,9 @@ public class MintVocabularyJSON implements MintVocabulary {
       gv.setID(graphid + "#" + v.getName());
       if(v.getAlignment() != null) {
         ArrayList<String> standard_names = new ArrayList<String>();
-        String cname = null;
         for(ArrayList<Object> items : v.getAlignment()) {
           String stdname = items.get(0).toString();
-          String tcname = this.getCanonicalName(stdname);
-          if(tcname != null)
-            cname = tcname;
           standard_names.add(stdname);
-        }
-        if(standard_names.size() > 0 && cname == null) {
-          cname = standard_names.get(0);
-        }
-        if(cname != null) {
-          gv.setCanonical_name(cname);
         }
         gv.setStandard_names(standard_names);
       }
@@ -398,6 +390,34 @@ public class MintVocabularyJSON implements MintVocabulary {
     return graph;
   }
 
+  private String getGraphFile(String graphid) {
+    String graphdir = this.getFullPath(GRAPHS_DIR);
+    File dir = new File(graphdir);
+    if(!dir.exists()) {
+      dir.mkdir();
+    }
+    return graphdir + File.separator + graphid + ".json";
+  }
+  
+  private void writeGraph(VariableGraph graph) {
+    String gname = graph.getID().substring(graph.getID().lastIndexOf("/"));
+    try {
+      this.mapper.writerWithDefaultPrettyPrinter().writeValue(
+          new FileOutputStream(this.getGraphFile(gname)), graph);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+  
+  public String addVariableGraph(VariableGraph graph) {
+    this.writeGraph(graph);
+    return graph.getID();
+  }
+  
+  public void updateVariableGraph(VariableGraph graph) {
+    this.writeGraph(graph);
+  }
+  
   public ArrayList<Region> getRegions() {
     return new ArrayList<Region>(this.regions.values());
   }
@@ -420,37 +440,6 @@ public class MintVocabularyJSON implements MintVocabulary {
       if(region.getSubRegions() != null)
         this.setAllRegions(region.getSubRegions(), region.getID());
     }
-  }
-
-  public ArrayList<EventType> getEventTypes() {
-    return new ArrayList<EventType>(this.eventTypes.values());
-  }
-  
-  public EventType getEventType(String id) {
-    return this.eventTypes.get(id);
-  }
-
-  public void setEventTypes(ArrayList<EventType> eventTypes) {
-    for(EventType eventType : eventTypes)
-      this.eventTypes.put(eventType.getID(), eventType);
-  }
-
-  public ArrayList<InterventionType> getInterventionTypes() {
-    return new ArrayList<InterventionType>(this.interventionTypes.values());
-  }
-
-  public void setInterventionTypes(ArrayList<InterventionType> interventionTypes) {
-    for(InterventionType itype : interventionTypes)
-      this.interventionTypes.put(itype.getID(), itype);
-  }
-
-  public ArrayList<QuestionTemplate> getQuestionTemplates() {
-    return new ArrayList<QuestionTemplate>(questionTemplates.values());
-  }
-
-  public void setQuestionTemplates(ArrayList<QuestionTemplate> questionTemplates) {
-    for(QuestionTemplate template : questionTemplates)
-      this.questionTemplates.put(template.getID(), template);
   }
 
   public ArrayList<TaskType> getTaskTypes() {
@@ -486,6 +475,16 @@ public class MintVocabularyJSON implements MintVocabulary {
     return cname;
   }
   
+  public String getCanonicalName(ArrayList<String> stdname_ids) {
+    String cname = null;
+    for(String stdname_id : stdname_ids) {
+      cname = this.getCanonicalName(stdname_id);
+      if(!cname.equals(stdname_id))
+        return cname;
+    }
+    return cname;
+  }
+  
   public Model getModel(String id) {
     return this.models.get(id);
   }
@@ -498,20 +497,6 @@ public class MintVocabularyJSON implements MintVocabulary {
 
   public ArrayList<Model> getModels() {
     return new ArrayList<Model>(models.values());
-  }
-  
-  public Dataset getDataset(String id) {
-    return this.datasets.get(id);
-  }
-  
-  public void setDatasets(ArrayList<Dataset> datasets) {
-    for(Dataset dataset : datasets) {
-      this.datasets.put(dataset.getId(), dataset);
-    }
-  }
-
-  public ArrayList<Dataset> getDatasets() {
-    return new ArrayList<Dataset>(datasets.values());
   }
   
   public ArrayList<WorkflowPointer> getWorkflows() {
@@ -530,16 +515,6 @@ public class MintVocabularyJSON implements MintVocabulary {
   public void setGraphs(ArrayList<VariableGraph> graphs) {
     for(VariableGraph graph : graphs)
       this.graphs.put(graph.getID(), graph);
-  }
-
-  @Override
-  public QuestionTemplate getQuestionTemplate(String id) {
-    return this.questionTemplates.get(id);
-  }
-
-  @Override
-  public InterventionType getInterventionType(String id) {
-    return this.interventionTypes.get(id);
   }
 
   @Override

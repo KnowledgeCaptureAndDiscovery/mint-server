@@ -25,6 +25,7 @@ public class MintPlanner {
   public ArrayList<WorkflowSolution> createWorkflowSolutions(
       ArrayList<String> drivingVariables,
       ArrayList<String> responseVariables,
+      ArrayList<String> selectedModels,
       VariableGraph graph,
       DataSpecification ds, 
       ArrayList<Model> models) {
@@ -107,14 +108,13 @@ public class MintPlanner {
 
       while(varqueue.size() > 0) {
         GVariable v = varqueue.remove(0);
-        // System.out.println("Checking variable " + v.getLabel());
+        String cname = vocabulary.getCanonicalName(v.getStandard_names());
         
-        String cname = v.getCanonical_name();
-        // ArrayList<String> stdnames = v.getStandard_names();
+        System.out.println("Checking variable " + cname);
         
         // Skip if variable already resolved
         if(v.isResolved()) {
-          // System.out.println(v.getLabel() + " already resolved. Continue.");
+          System.out.println(v.getLabel() + " already resolved. Continue.");
           continue;
         }
 
@@ -128,7 +128,7 @@ public class MintPlanner {
             for(String dataprov : dataprovs) {
               v.setProvider(new VariableProvider(dataprov, VariableProvider.Type.DATA, null));
             }
-            // System.out.println(cname + " has a data provider. Variable resolved. Continue.");
+            System.out.println(cname + " has a data provider. Variable resolved. Continue.");
             continue;
           }
         }
@@ -136,8 +136,8 @@ public class MintPlanner {
         // Check model provider
         if(comp_providers.containsKey(cname)) {
           ArrayList<Model> comps = comp_providers.get(cname);
-          // System.out.println(cname + " has "+ comps.size()+" model providers");
-          // System.out.println(comps);
+          System.out.println(cname + " has "+ comps.size()+" model providers");
+          System.out.println(comps);
 
           // If more than one model, create extra solutions
           // from 2 onwards
@@ -149,7 +149,7 @@ public class MintPlanner {
             solution_queue.add(newsolution);
             
             // Mark variable as resolved
-            String varhash = v.getCanonical_name();
+            String varhash = vocabulary.getCanonicalName(v.getStandard_names());
             GVariable newv = newsolution.getVarhash().get(varhash);
             newv.setResolved(true);
             VariableProvider provider = new VariableProvider(m.getID(), VariableProvider.Type.MODEL, 
@@ -170,7 +170,7 @@ public class MintPlanner {
           v.setProvider(provider);
         }
       }
-      // System.out.println(solution);
+      System.out.println(solution);
       
       // Create workflow for solution
       WorkflowSolution workflow = solution.createWorkflow(graph, this);

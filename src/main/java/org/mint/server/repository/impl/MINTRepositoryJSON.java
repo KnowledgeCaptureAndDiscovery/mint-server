@@ -532,10 +532,11 @@ public class MINTRepositoryJSON implements MintRepository {
   public ArrayList<WorkflowSolution> createWorkflowSolutions(
       ArrayList<String> drivingVariables,
       ArrayList<String> responseVariables,
+      ArrayList<String> models,
       VariableGraph cag,
       DataSpecification ds) {
     return new MintPlanner().createWorkflowSolutions(drivingVariables, 
-        responseVariables, cag, ds, this.vocabulary.getModels());
+        responseVariables, models, cag, ds, this.vocabulary.getModels());
   }
   
   /* End of Workflow Compositions */

@@ -14,6 +14,7 @@ import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.question.ModelingQuestion;
 import org.mint.server.planner.WorkflowSolution;
 import org.mint.server.repository.impl.MINTRepositoryJSON;
+import org.mint.server.repository.impl.MintVocabularyJSON;
 
 
 @Path("users/{userid}/questions/{questionid}/planner")
@@ -32,10 +33,13 @@ public class PlannerResource {
     MINTRepositoryJSON repo = MINTRepositoryJSON.get(userid);
     String quri = repo.getQuestionURI(questionid);
     ModelingQuestion question = repo.getModelingQuestionDetails(quri);
-    String graphname = question.getGraph().substring(question.getGraph().lastIndexOf("/")+1);
-    VariableGraph graph = repo.getVariableGraph(graphname);
+    VariableGraph graph = MintVocabularyJSON.get().getGraph(question.getGraph());
     String dsuri = repo.getDataSpecificationURI(questionid, dsid);
     DataSpecification ds = repo.getDataSpecificationDetails(questionid, dsuri);
-    return repo.createWorkflowSolutions(question.getDrivingVariables(), question.getResponseVariables(), graph, ds);
+    return repo.createWorkflowSolutions(
+        question.getDrivingVariables(), 
+        question.getResponseVariables(),
+        question.getModels(),
+        graph, ds);
   }
 }

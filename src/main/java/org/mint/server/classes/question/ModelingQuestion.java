@@ -8,9 +8,9 @@ import org.mint.server.classes.question.template.TemplateTimePeriod;
 public class ModelingQuestion extends URIEntity {
   private static final long serialVersionUID = -6674193101956139852L;
 
-  public enum Type { DIAGNOSTIC, PROGNOSTIC, COUNTERFACTUAL } ;
+  public enum QuestionType { DIAGNOSTIC, PROGNOSTIC, COUNTERFACTUAL } ;
   
-  Type type;
+  QuestionType type;
 
   String region;
   TemplateTimePeriod timePeriod;
@@ -19,23 +19,25 @@ public class ModelingQuestion extends URIEntity {
   String graph;
   ArrayList<String> drivingVariables;
   ArrayList<String> responseVariables;
+  ArrayList<String> models;
   
   public ModelingQuestion() {
     super();
   }
   
-  public ModelingQuestion(String id, String name, Type type) {
+  public ModelingQuestion(String id, String name, QuestionType type) {
     super(id, name);
     this.type = type;
+    this.models = new ArrayList<String>();
     this.drivingVariables = new ArrayList<String>();
     this.responseVariables = new ArrayList<String>();
   }
 
-  public Type getType() {
+  public QuestionType getType() {
     return type;
   }
 
-  public void setType(Type type) {
+  public void setType(QuestionType type) {
     this.type = type;
   }
 
@@ -85,5 +87,13 @@ public class ModelingQuestion extends URIEntity {
 
   public void setIntervention(String intervention) {
     this.intervention = intervention;
+  }
+
+  public ArrayList<String> getModels() {
+    return models;
+  }
+
+  public void setModels(ArrayList<String> models) {
+    this.models = models;
   }
 }

@@ -101,7 +101,6 @@ public class Config {
     else
       wingsProps.put("internal_server", this.props.getString("wings.server"));
     wingsProps.put("domain", this.props.getString("wings.domain"));
-    wingsProps.put("gendomain", this.props.getString("wings.gendomain"));
     wingsProps.put("storage", this.props.getString("wings.storage"));
     wingsProps.put("dotpath", this.props.getString("wings.dotpath"));
     wingsProps.put("ontology_prefix", this.props.getString("wings.ontology_prefix"));
@@ -115,6 +114,14 @@ public class Config {
     HashMap<String, String> vizProps = new HashMap<String, String>();
     vizProps.put("server", this.props.getString("visualization.server"));
     map.put("visualization", vizProps);
+
+    HashMap<String, String> transProps = new HashMap<String, String>();
+    transProps.put("server", this.props.getString("transformation.server"));
+    map.put("transformation", transProps);
+
+    HashMap<String, String> gsnProps = new HashMap<String, String>();
+    gsnProps.put("server", this.props.getString("gsn.server"));
+    map.put("gsn", gsnProps);
     
     return map;
   }

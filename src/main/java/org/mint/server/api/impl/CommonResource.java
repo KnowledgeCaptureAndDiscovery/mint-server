@@ -6,25 +6,27 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 
-import org.mint.server.classes.Dataset;
 import org.mint.server.classes.Region;
 import org.mint.server.classes.StandardName;
 import org.mint.server.classes.URIEntity;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.model.Model;
 import org.mint.server.classes.rawcag.RawCAG;
-import org.mint.server.classes.vocabulary.EventType;
-import org.mint.server.classes.vocabulary.InterventionType;
-import org.mint.server.classes.vocabulary.QuestionTemplate;
 import org.mint.server.classes.vocabulary.TaskType;
+import org.mint.server.classes.vocabulary.WorkflowPointer;
 import org.mint.server.repository.MintRepository;
+import org.mint.server.repository.impl.MINTRepositoryJSON;
 import org.mint.server.repository.impl.MintVocabularyJSON;
 import org.mint.server.util.Config;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Path("common")
 public class CommonResource {
@@ -64,6 +66,21 @@ public class CommonResource {
     }
     return graphIds;
   }
+  
+  @POST
+  @Path("graphs/{graphid}")
+  public String addGraph(@JsonProperty("graph") VariableGraph graph) {
+    MintVocabularyJSON vocab = MintVocabularyJSON.get();
+    return vocab.addVariableGraph(graph);
+  }
+  
+  @PUT
+  @Path("graphs/{graphid}")
+  public void updateGraph(@JsonProperty("graph") VariableGraph graph) {
+    MintVocabularyJSON vocab = MintVocabularyJSON.get();
+    vocab.updateVariableGraph(graph);
+  }
+  
   
   @GET
   @Path("graphs/{graphid}")
@@ -111,45 +128,6 @@ public class CommonResource {
     MintVocabularyJSON vocab = MintVocabularyJSON.get();
     String task_type_id = vocab.getResourceURI(task_type, vocab.TASKS);
     return vocab.getTaskType(task_type_id);
-  }  
-  
-  @GET
-  @Path("question_templates")
-  @Produces("application/json")
-  public List<QuestionTemplate> listQuestionTemplates() {
-    return MintVocabularyJSON.get().getQuestionTemplates();
-  }
-  
-  @GET
-  @Path("question_templates/{templateid}")
-  @Produces("application/json")
-  public QuestionTemplate getQuestionTemplate(@PathParam("question_template") String template_name) {
-    MintVocabularyJSON vocab = MintVocabularyJSON.get();
-    String templateid = vocab.getResourceURI(template_name, vocab.QUESTIONS);
-    return vocab.getQuestionTemplate(templateid);
-  }
-
-  @GET
-  @Path("event_types")
-  @Produces("application/json")
-  public List<EventType> listEventTypes() {
-    return MintVocabularyJSON.get().getEventTypes();
-  }
-  
-  @GET
-  @Path("intervention_types")
-  @Produces("application/json")
-  public List<InterventionType> listInterventionTypes() {
-    return MintVocabularyJSON.get().getInterventionTypes();
-  }
-  
-  @GET
-  @Path("event_types/{event_type}")
-  @Produces("application/json")
-  public EventType getEventTypes(@PathParam("event_type") String typename) {
-    MintVocabularyJSON vocab = MintVocabularyJSON.get();
-    String typeid = vocab.getResourceURI(typename, vocab.EVENTS);
-    return vocab.getEventType(typeid);
   }
   
   @GET
@@ -172,11 +150,11 @@ public class CommonResource {
   public List<StandardName> getStandardNames() {
     return MintVocabularyJSON.get().getStandardNames();
   }
-  
+
   @GET
-  @Path("datasets")
+  @Path("workflows")
   @Produces("application/json")
-  public List<Dataset> getDatasets() {
-    return MintVocabularyJSON.get().getDatasets();
+  public List<WorkflowPointer> getWorkflowPointers() {
+    return MintVocabularyJSON.get().getWorkflows();
   }
 }

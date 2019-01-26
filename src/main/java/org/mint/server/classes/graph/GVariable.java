@@ -4,12 +4,9 @@ import java.util.ArrayList;
 
 import org.mint.server.classes.URIEntity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 public class GVariable extends URIEntity {
   private static final long serialVersionUID = -1065248491858616282L;
   
-  String canonical_name;
   ArrayList<String> standard_names;
   GraphPosition position;
   String category;
@@ -27,13 +24,6 @@ public class GVariable extends URIEntity {
   
   public GVariable(GVariable gvar) {
     this.copyFrom(gvar);
-  }
-  
-  public String getCanonical_name() {
-    return canonical_name;
-  }
-  public void setCanonical_name(String canonical_name) {
-    this.canonical_name = canonical_name;
   }
   public ArrayList<String> getStandard_names() {
     return standard_names;
@@ -87,7 +77,6 @@ public class GVariable extends URIEntity {
     this.setProvider(v.getProvider());
     this.setResolved(v.isResolved());
     this.setStandard_names(v.getStandard_names());
-    this.setCanonical_name(v.getCanonical_name());
     this.setProvenance(new ArrayList<VariableProvenance>(v.getProvenance()));
   }
   
