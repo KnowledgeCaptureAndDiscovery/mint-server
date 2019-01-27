@@ -215,9 +215,9 @@ public class MintVocabularyJSON implements MintVocabulary {
     pointer.setID(wflowuri + "#" + pointer.getWorkflow());
 
     try {
-      String xml = IOUtils.toString(new URI(wflowuri), StandardCharsets.UTF_8);
-      Pattern comp = Pattern.compile("hasComponentBinding .+#(.+?)\"");
-      for(String line : xml.split("\\n")) {
+      String json = IOUtils.toString(new URI(wflowuri+"?format=json"), StandardCharsets.UTF_8);
+      Pattern comp = Pattern.compile("hasComponentBinding.+#(.+?)\"");
+      for(String line : json.split("\\n")) {
         Matcher m = comp.matcher(line);
         if(m.find()) {
           components.add(m.group(1));
