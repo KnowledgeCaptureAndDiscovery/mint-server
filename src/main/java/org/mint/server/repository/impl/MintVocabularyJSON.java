@@ -312,8 +312,12 @@ public class MintVocabularyJSON implements MintVocabulary {
       String vid = kv.get("vp");
       String units = kv.get("units");
       String stdname = kv.get("st");
-      if(stdname == null)
+      /*
+      if(stdname == null) {
+        stdname = vid.substring(vid.indexOf("/")+1);
         stdname = vid.substring(vid.indexOf("#")+1);
+      }
+      */
       
       boolean isinput = ioprop.endsWith("hasInput");
       ModelIO io = isinput ? inputs.get(ioid) : outputs.get(ioid);
