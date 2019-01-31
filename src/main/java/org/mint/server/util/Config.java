@@ -102,7 +102,6 @@ public class Config {
       wingsProps.put("internal_server", this.props.getString("wings.server"));
     wingsProps.put("domain", this.props.getString("wings.domain"));
     wingsProps.put("storage", this.props.getString("wings.storage"));
-    wingsProps.put("dotpath", this.props.getString("wings.dotpath"));
     wingsProps.put("ontology_prefix", this.props.getString("wings.ontology_prefix"));
     map.put("wings", wingsProps);
     

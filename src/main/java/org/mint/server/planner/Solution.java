@@ -220,6 +220,8 @@ public class Solution implements Comparable<Solution> {
         for(ModelVariable mv : ip.getVariables()) {
           String cname = this.vocabulary.getCanonicalName(mv.getStandard_name());
           SolutionVariable v = this.findVariable(ip.getType(), cname);
+          if(v == null)
+            return null;
           if(!v.isResolved() || v.getProvider() == null) {
             // CHANGE: DO NOT DISCARD if partial data binding
             //System.out.println("No data for: " + c.getID() + " (" + cname + ")");

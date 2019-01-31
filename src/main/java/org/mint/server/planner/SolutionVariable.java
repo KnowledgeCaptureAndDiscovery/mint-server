@@ -6,7 +6,7 @@ import org.mint.server.classes.graph.GVariable;
 import org.mint.server.classes.graph.VariableProvenance;
 import org.mint.server.classes.graph.VariableProvider;
 
-public class SolutionVariable {
+public class SolutionVariable implements Comparable<SolutionVariable> {
   GVariable variable; // Pointer to the graph variable
   String type; // IO type
   
@@ -88,4 +88,15 @@ public class SolutionVariable {
     }
     return null;
   }
+  
+  @Override
+  public int hashCode() {
+    return (this.variable + "-" + this.type).hashCode();
+  }
+  
+  @Override
+  public int compareTo(SolutionVariable o) {
+    return Integer.compare(this.hashCode(), o.hashCode());
+  }
+  
 }

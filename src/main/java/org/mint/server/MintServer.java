@@ -6,6 +6,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.mint.server.api.impl.CommonResource;
 import org.mint.server.api.impl.DataResource;
 import org.mint.server.api.impl.GraphResource;
+import org.mint.server.api.impl.LayoutResource;
 import org.mint.server.api.impl.PlannerResource;
 import org.mint.server.api.impl.QuestionResource;
 import org.mint.server.api.impl.TaskResource;
@@ -30,6 +31,7 @@ class MintServer extends ResourceConfig {
     register(DataResource.class);
     register(PlannerResource.class);
     register(WorkflowResource.class);
+    register(LayoutResource.class);
   }
   
   @PreDestroy
