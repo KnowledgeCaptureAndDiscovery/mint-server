@@ -25,6 +25,7 @@ import org.mint.server.classes.graph.Relation;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.model.Model;
 import org.mint.server.classes.model.ModelIO;
+import org.mint.server.classes.model.ModelParameter;
 import org.mint.server.classes.model.ModelType;
 import org.mint.server.classes.model.ModelVariable;
 import org.mint.server.classes.rawcag.CagEdge;
@@ -308,16 +309,13 @@ public class MintVocabularyJSON implements MintVocabulary {
     for(HashMap<String, String> kv: kvlist) {
       String ioprop = kv.get("prop");
       String ioid = kv.get("io");
+      String iolabel = kv.get("iolabel");
       String iotype = kv.get("type");
+      String ioformat = kv.get("format");
       String vid = kv.get("vp");
       String units = kv.get("units");
       String stdname = kv.get("st");
-      /*
-      if(stdname == null) {
-        stdname = vid.substring(vid.indexOf("/")+1);
-        stdname = vid.substring(vid.indexOf("#")+1);
-      }
-      */
+      String dimensionality = kv.get("dim");
       
       boolean isinput = ioprop.endsWith("hasInput");
       ModelIO io = isinput ? inputs.get(ioid) : outputs.get(ioid);
@@ -325,12 +323,23 @@ public class MintVocabularyJSON implements MintVocabulary {
         io = new ModelIO(ioid);
       
       io.setType(iotype);
+      io.setFormat(ioformat);
+      io.setDimensionality(0);
+      if(iolabel != null) {
+        io.setLabel(iolabel);
+      }
+      if(dimensionality != null) {
+        int dim = Integer.parseInt(dimensionality);
+        io.setDimensionality(dim);
+      }
       
-      ModelVariable mv = new ModelVariable();
-      mv.setID(vid);
-      mv.setUnits(units);
-      mv.setStandard_name(stdname);
-      io.addVariable(mv);
+      if(vid != null) {        
+        ModelVariable mv = new ModelVariable();
+        mv.setID(vid);
+        mv.setUnits(units);
+        mv.setStandard_name(stdname);
+        io.addVariable(mv);
+      }
       if(isinput)
         inputs.put(ioid, io);
       else
@@ -339,6 +348,28 @@ public class MintVocabularyJSON implements MintVocabulary {
     
     model.setInputs(new ArrayList<ModelIO>(inputs.values()));
     model.setOutputs(new ArrayList<ModelIO>(outputs.values()));
+    model = this.fetchModelParamters(model);
+    return model;
+  }
+  
+  private Model fetchModelParamters(Model model) {
+    HashMap<String, String>queryParams = new HashMap<String, String>();
+    queryParams.put("config", model.getID());
+    ArrayList<HashMap<String, String>> kvlist = 
+        this.queryModelCatalog("getConfigIParameters", queryParams);
+
+    ArrayList<ModelParameter> parameters = new ArrayList<ModelParameter>(); 
+    for(HashMap<String, String> kv: kvlist) {
+      String pid = kv.get("p");
+      String plabel = kv.get("paramlabel");
+      String defaultValue = kv.get("defaultvalue");
+      String dataType = kv.get("pdatatype");
+      String type = kv.get("ptype");
+      
+      ModelParameter param = new ModelParameter(pid, plabel, type, defaultValue, dataType);
+      parameters.add(param);
+    }
+    model.setParameters(parameters);
     return model;
   }
   
@@ -484,6 +515,8 @@ public class MintVocabularyJSON implements MintVocabulary {
   public String getCanonicalName(ArrayList<String> stdname_ids) {
     String cname = null;
     for(String stdname_id : stdname_ids) {
+      if(stdname_id == null)
+        continue;
       cname = this.getCanonicalName(stdname_id);
       if(!cname.equals(stdname_id))
         return cname;

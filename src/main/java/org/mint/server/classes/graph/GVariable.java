@@ -11,16 +11,8 @@ public class GVariable extends URIEntity {
   GraphPosition position;
   String category;
   boolean added;
-  
-  //@JsonIgnore
-  ArrayList<VariableProvenance> provenance;
-  
-  VariableProvider provider;
-  boolean resolved;
 
-  public GVariable() {
-    this.provenance = new ArrayList<VariableProvenance>();
-  }
+  public GVariable() {}
   
   public GVariable(GVariable gvar) {
     this.copyFrom(gvar);
@@ -43,28 +35,9 @@ public class GVariable extends URIEntity {
   public void setCategory(String category) {
     this.category = category;
   }
-  public ArrayList<VariableProvenance> getProvenance() {
-    return provenance;
-  }
-  public void setProvenance(ArrayList<VariableProvenance> provenance) {
-    this.provenance = provenance;
-  }
-  public VariableProvider getProvider() {
-    return provider;
-  }
-  public void setProvider(VariableProvider provider) {
-    this.provider = provider;
-  }
-  public boolean isResolved() {
-    return resolved;
-  }
-  public void setResolved(boolean resolved) {
-    this.resolved = resolved;
-  }
   public boolean isAdded() {
     return added;
   }
-
   public void setAdded(boolean added) {
     this.added = added;
   }
@@ -74,32 +47,7 @@ public class GVariable extends URIEntity {
     this.setLabel(v.getLabel());
     this.setPosition(v.getPosition());
     this.setCategory(v.getCategory());
-    this.setProvider(v.getProvider());
-    this.setResolved(v.isResolved());
     this.setStandard_names(v.getStandard_names());
-    this.setProvenance(new ArrayList<VariableProvenance>(v.getProvenance()));
   }
-  
-  public String getMatchingFileName(String modelid, ArrayList<String> vars, boolean isinput) {
-    for(VariableProvenance prov : this.provenance) {
-      if(prov.getModel().equals(modelid) && prov.isinput == isinput) {
-        for(String varname : vars) {
-          if(varname.equals(prov.getFileName())) {
-            return prov.getFileName();
-          }
-        }
-      }
-    }
-    return null;
-  }
-  
-  public VariableProvenance getMatchingProvenanceItem(String modelid, String filename) {
-    for(VariableProvenance prov : this.provenance) {
-      if(prov.getModel().equals(modelid)) {
-        if(prov.getFileName().equals(filename))
-          return prov; 
-      }
-    }
-    return null;
-  }
+
 }

@@ -12,14 +12,27 @@ public class Model extends URIEntity {
   
   ArrayList<ModelIO> inputs;
   ArrayList<ModelIO> outputs;
+  ArrayList<ModelParameter> parameters;
   
   public void copyFrom(Model model) {
     this.setID(model.getID());
     this.setLabel(model.getLabel());
     this.setVersion(model.getVersion());
     this.setType(model.getType());
-    this.inputs = new ArrayList<ModelIO>(model.getInputs());
-    this.outputs = new ArrayList<ModelIO>(model.getOutputs());
+    
+    this.inputs = new ArrayList<ModelIO>();
+    this.outputs = new ArrayList<ModelIO>();
+    this.parameters = new ArrayList<ModelParameter>();
+    
+    if(model.getInputs() != null)
+      for(ModelIO io : model.getInputs())
+        this.inputs.add(new ModelIO(io));
+    if(model.getOutputs() != null)
+      for(ModelIO io : model.getOutputs())
+        this.outputs.add(new ModelIO(io));
+    if(model.getParameters() != null)
+      for(ModelParameter param : model.getParameters())
+        this.parameters.add(new ModelParameter(param));
   }
 
   public String getVersion() {
@@ -49,5 +62,13 @@ public class Model extends URIEntity {
   }
   public void setOutputs(ArrayList<ModelIO> outputs) {
     this.outputs = outputs;
+  }
+
+  public ArrayList<ModelParameter> getParameters() {
+    return parameters;
+  }
+
+  public void setParameters(ArrayList<ModelParameter> parameters) {
+    this.parameters = parameters;
   }
 }

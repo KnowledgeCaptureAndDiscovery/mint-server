@@ -1,20 +1,23 @@
 package org.mint.server.classes.graph;
 
-import org.mint.server.classes.URIEntity;
-
-public class VariableProvider extends URIEntity {
-  private static final long serialVersionUID = 7084591893072377975L;
+public class VariableProvider {
   public enum Type { MODEL, DATA, OUTPUT };
   
+  String id;
   Type type;
   String category;
   
   public VariableProvider(String id, Type type, String category) {
-    super(id);
+    this.id = id;
     this.type = type;
     this.category = category;
   }
-  
+  public String getId() {
+    return this.id;
+  }
+  public void setId(String id) {
+    this.id = id;
+  }
   public Type getType() {
     return type;
   }

@@ -46,7 +46,11 @@ public class URIEntity implements Serializable, Comparable<URIEntity> {
 
   public String extractNameFromId() {
     if (id != null) {
-      return id.getFragment();
+      if(id.getFragment() != null)
+        return id.getFragment();
+      else {
+        return id.getPath().substring(id.getPath().lastIndexOf("/")+1);
+      }
     }
     else
       return null;

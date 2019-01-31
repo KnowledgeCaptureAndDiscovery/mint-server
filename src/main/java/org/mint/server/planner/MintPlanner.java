@@ -13,6 +13,7 @@ import org.mint.server.classes.graph.VariableProvider;
 import org.mint.server.classes.model.Model;
 import org.mint.server.classes.model.ModelIO;
 import org.mint.server.classes.model.ModelVariable;
+import org.mint.server.classes.question.ModelingQuestion;
 import org.mint.server.repository.impl.MintVocabularyJSON;
 
 
@@ -21,27 +22,59 @@ public class MintPlanner {
   public MintPlanner() { 
     
   }
+    
   
   public ArrayList<WorkflowSolution> createWorkflowSolutions(
-      ArrayList<String> drivingVariables,
-      ArrayList<String> responseVariables,
-      ArrayList<String> selectedModels,
+      ModelingQuestion question,
       VariableGraph graph,
       DataSpecification ds, 
-      ArrayList<Model> models) {
+      ArrayList<Model> origmodels) {
     ArrayList<WorkflowSolution> mgraphs = new ArrayList<WorkflowSolution>();
     String userid = ds.getID().replaceAll(".*/users/", "").replaceAll("/.*", "");
     MintVocabularyJSON vocabulary = MintVocabularyJSON.get();
     
-    // TODO: Use File Types here too
+    // Clone models 
+    // - For model io with no variables, create dummy variable from type
+    // - For model variable with no standard name, don't add
+    ArrayList<Model> models = new ArrayList<Model>();
+    for(Model om : origmodels) {
+      Model m = new Model();
+      m.copyFrom(om);
+      if(m.getInputs() != null) {
+        for(ModelIO io : m.getInputs()) {
+          ArrayList<ModelVariable> newvars = new ArrayList<ModelVariable>();
+          for(ModelVariable ov: io.getVariables()) {
+            if(ov.getStandard_name() != null) {
+              newvars.add(ov);
+            }
+          }
+          io.setVariables(newvars);
+        }
+      }
+      if(m.getOutputs() != null) {
+        for(ModelIO io : m.getOutputs()) {
+          ArrayList<ModelVariable> newvars = new ArrayList<ModelVariable>();
+          for(ModelVariable ov: io.getVariables()) {
+            if(ov.getStandard_name() != null) {
+              newvars.add(ov);
+            }
+          }
+          io.setVariables(newvars);
+        }
+      }
+      models.add(m);
+    }
+ 
 
     // Initialze initial list of variables
-    ArrayList<GVariable> variables = new ArrayList<GVariable>();
+    ArrayList<SolutionVariable> variables = new ArrayList<SolutionVariable>();
     for(GVariable gvar : graph.getVariables()) {
-      if(responseVariables != null && responseVariables.contains(gvar.getID()))
-        variables.add(gvar);
-      else if(drivingVariables != null && drivingVariables.contains(gvar.getID()))
-        variables.add(gvar);
+      if(question.getResponseVariables() != null && 
+          question.getResponseVariables().contains(gvar.getID()))
+        variables.add(new SolutionVariable(gvar));
+      else if(question.getDrivingVariables() != null && 
+          question.getDrivingVariables().contains(gvar.getID()))
+        variables.add(new SolutionVariable(gvar));
     }
 
     // Get datasets that provide variables
@@ -62,11 +95,14 @@ public class MintPlanner {
 
     HashMap<String, ArrayList<Model>> comp_providers = 
         new HashMap<String, ArrayList<Model>>();
+
+    HashMap<String, ArrayList<Model>> comp_type_providers = 
+        new HashMap<String, ArrayList<Model>>();
     
-    // Get models that provide variables
+    // Get models that provide variables & types
     for(Model c : models) {
       for(ModelIO op : c.getOutputs()) {
-        if(op.getVariables() == null) {
+        if(op.getVariables() == null || op.getVariables().size() == 0) {
           op.setVariables(this.createDummyVariables(op));
         }
         for(ModelVariable mv : op.getVariables()) {
@@ -74,18 +110,30 @@ public class MintPlanner {
           ArrayList<Model> providers = comp_providers.get(cname);
           if(providers == null)
             providers = new ArrayList<Model>();
-          providers.add(c);
+          if(!providers.contains(c))
+            providers.add(c);
           comp_providers.put(cname, providers);
+        }
+        if(op.getType() != null) {
+          ArrayList<Model> type_providers = comp_type_providers.get(op.getType());
+          if(type_providers == null)
+            type_providers = new ArrayList<Model>();
+          if(!type_providers.contains(c))
+            type_providers.add(c);
+          comp_type_providers.put(op.getType(), type_providers);
         }
       }
       for(ModelIO ip : c.getInputs()) {
-        if(ip.getVariables() == null) {
+        if(ip.getVariables() == null || ip.getVariables().size() == 0) {
           ip.setVariables(this.createDummyVariables(ip));
         }
       }
     }
-    // System.out.println(comp_providers);
-    // System.out.println(data_providers);
+    /*
+    System.out.println(comp_providers);
+    System.out.println(comp_type_providers);
+    System.out.println(data_providers);
+    */
 
     // Create solutions
     ArrayList<Solution> temp_list = new ArrayList<Solution>();
@@ -104,17 +152,22 @@ public class MintPlanner {
       
       // System.out.println("*** Expanding Solution ---");
       
-      ArrayList<GVariable> varqueue = new ArrayList<GVariable>(solution.getVariables());
+      ArrayList<SolutionVariable> varqueue = new ArrayList<SolutionVariable>(solution.getVariables());
 
       while(varqueue.size() > 0) {
-        GVariable v = varqueue.remove(0);
-        String cname = vocabulary.getCanonicalName(v.getStandard_names());
-        
-        System.out.println("Checking variable " + cname);
+        SolutionVariable v = varqueue.remove(0);
+        String cname = vocabulary.getCanonicalName(v.getVariable().getStandard_names());
+        String vtype = v.getType();
+
+        // Create dummy canonical name
+        if(cname == null) 
+          cname = v.getVariable().getLocalName();
+
+        // System.out.println("Checking variable " + cname);
         
         // Skip if variable already resolved
         if(v.isResolved()) {
-          System.out.println(v.getLabel() + " already resolved. Continue.");
+          //System.out.println(v.getVariable().getLabel() + " already resolved. Continue.");
           continue;
         }
 
@@ -128,39 +181,52 @@ public class MintPlanner {
             for(String dataprov : dataprovs) {
               v.setProvider(new VariableProvider(dataprov, VariableProvider.Type.DATA, null));
             }
-            System.out.println(cname + " has a data provider. Variable resolved. Continue.");
+            //System.out.println(cname + " has a data provider. Variable resolved. Continue.");
             continue;
           }
         }
 
         // Check model provider
-        if(comp_providers.containsKey(cname)) {
-          ArrayList<Model> comps = comp_providers.get(cname);
-          System.out.println(cname + " has "+ comps.size()+" model providers");
-          System.out.println(comps);
+        ArrayList<Model> comps = new ArrayList<Model>();
+        // If type exists, then check for type matches
+        if(vtype != null) {
+          if(comp_type_providers.containsKey(vtype)) {
+            comps = comp_type_providers.get(vtype);
+          }
+        }
+        else {
+          if(comp_providers.containsKey(cname)) {
+            comps = comp_providers.get(cname);
+          }
+        }
+        if(comps.size() > 0) {
+          //System.out.println(cname + " has "+ comps.size()+" model providers");
+          //System.out.println(comps);
 
           // If more than one model, create extra solutions
           // from 2 onwards
           for(int i=1; i<comps.size(); i++) {
             Model m = comps.get(i);
-            Solution newsolution = new Solution(new ArrayList<GVariable>());
+            Solution newsolution = new Solution(new ArrayList<SolutionVariable>());
             newsolution.copy(solution);
             newsolution.addModel(m, graph.getID());
             solution_queue.add(newsolution);
             
             // Mark variable as resolved
-            String varhash = vocabulary.getCanonicalName(v.getStandard_names());
-            GVariable newv = newsolution.getVarhash().get(varhash);
+            String varname = vocabulary.getCanonicalName(v.getVariable().getStandard_names());
+            SolutionVariable newv = newsolution.findVariable(vtype, varname);
             newv.setResolved(true);
+            
+            String category = m.getType() != null ? m.getType().getCategory() : null;
             VariableProvider provider = new VariableProvider(m.getID(), VariableProvider.Type.MODEL, 
-                m.getType().getCategory());
+                category);
             newv.setProvider(provider);
           }
 
           // Use the first model to modify current solution
           Model comp = comps.get(0);
-          ArrayList<GVariable> newvars = solution.addModel(comp, graph.getID());
-          for(GVariable newvar : newvars) {
+          ArrayList<SolutionVariable> newvars = solution.addModel(comp, graph.getID());
+          for(SolutionVariable newvar : newvars) {
             varqueue.add(newvar);
           }
           // Mark variable as resolved
@@ -170,26 +236,48 @@ public class MintPlanner {
           v.setProvider(provider);
         }
       }
-      System.out.println(solution);
+      //System.out.println(solution);
+      
+      // solution should contain all the models specified
+      boolean ok = true;
+      if(question.getModels() != null) {
+        for(String mid : question.getModels()) {
+          boolean found = false;
+          for(Model m : solution.getModels()) {
+            if(mid.equals(m.getID())) {
+              found = true;
+              break;
+            }
+          }
+          if(!found) {
+            ok = false;
+            break;
+          }
+        }
+      }
+      if(!ok)
+        continue;
       
       // Create workflow for solution
       WorkflowSolution workflow = solution.createWorkflow(graph, this);
       if(workflow != null) {
         workflow.setModelGraph(solution.createModelGraph(workflow, userid));
         workflow.setWingsWorkflow(solution.createWingsWorkflow(workflow, userid, this));
-        workflow.setGraph(solution.createGraph(workflow));
-        solution.diffGraph(workflow.getGraph(), graph);      
+        //workflow.setGraph(solution.createGraph(workflow));
+        //solution.diffGraph(workflow.getGraph(), graph);      
         mgraphs.add(workflow);
       }
+      break;
     }
+    //System.out.println(mgraphs.size());
     return mgraphs;
   }
-  
+ 
   private ArrayList<ModelVariable> createDummyVariables(ModelIO io) {
     ArrayList<ModelVariable> list = new ArrayList<ModelVariable>();
     ModelVariable mv = new ModelVariable();
     mv.setID(io.getID());
-    mv.setStandard_name(io.getLabel());
+    mv.setStandard_name(io.getType().replaceAll(".*#", ""));
     list.add(mv);
     return list;
   }

@@ -6,12 +6,15 @@ public class WorkflowLink {
   String from;
   String to;
   String variable;
+  String datatype;
   VariableProvider.Type type;
   
-  public WorkflowLink(String from, String to, String variable, VariableProvider.Type type) {
+  public WorkflowLink(String from, String to, String variable, String datatype, 
+      VariableProvider.Type type) {
     this.from = from;
     this.to = to;
     this.variable = variable;
+    this.datatype = datatype;
     this.type = type;
   }
   
@@ -33,6 +36,14 @@ public class WorkflowLink {
   public void setVariable(String variable) {
     this.variable = variable;
   }
+  public String getDatatype() {
+    return datatype;
+  }
+
+  public void setDatatype(String datatype) {
+    this.datatype = datatype;
+  }
+
   public VariableProvider.Type getType() {
     return type;
   }

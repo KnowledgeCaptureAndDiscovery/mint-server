@@ -8,8 +8,20 @@ public class ModelIO extends URIEntity {
   private static final long serialVersionUID = 5575376700347352778L;
   
   String type;
+  String format;
+  int dimensionality;
   ArrayList<ModelVariable> variables;
 
+  public ModelIO(ModelIO from) {
+    this.setID(from.getID());
+    this.setType(from.getType());
+    this.setDimensionality(from.getDimensionality());
+    this.variables = new ArrayList<ModelVariable>();
+    for(ModelVariable v : from.getVariables()) {
+      this.variables.add(new ModelVariable(v));
+    }
+  }
+  
   public ModelIO(String id) {
     super(id);
     this.variables = new ArrayList<ModelVariable>();
@@ -33,5 +45,21 @@ public class ModelIO extends URIEntity {
 
   public void setType(String type) {
     this.type = type;
+  }
+
+  public String getFormat() {
+    return format;
+  }
+
+  public void setFormat(String format) {
+    this.format = format;
+  }
+
+  public int getDimensionality() {
+    return dimensionality;
+  }
+
+  public void setDimensionality(int dimensionality) {
+    this.dimensionality = dimensionality;
   }
 }

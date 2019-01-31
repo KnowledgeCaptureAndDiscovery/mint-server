@@ -53,9 +53,7 @@ public interface MintRepository {
   
   // Workflow Composition / Planning
   public ArrayList<WorkflowSolution> createWorkflowSolutions(
-      ArrayList<String> drivingVariables,
-      ArrayList<String> responseVariables,
-      ArrayList<String> models,
+      ModelingQuestion question,
       VariableGraph cag,
       DataSpecification ds);
   

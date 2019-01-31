@@ -37,9 +37,6 @@ public class PlannerResource {
     String dsuri = repo.getDataSpecificationURI(questionid, dsid);
     DataSpecification ds = repo.getDataSpecificationDetails(questionid, dsuri);
     return repo.createWorkflowSolutions(
-        question.getDrivingVariables(), 
-        question.getResponseVariables(),
-        question.getModels(),
-        graph, ds);
+        question, graph, ds);
   }
 }

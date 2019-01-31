@@ -8,6 +8,14 @@ public class ModelVariable extends URIEntity {
   String units;
   String standard_name;
 
+  public ModelVariable() {}
+  
+  public ModelVariable(ModelVariable from) {
+    this.setID(from.getID());
+    this.units = from.getUnits();
+    this.standard_name = from.getStandard_name();
+  }
+  
   public String getStandard_name() {
     return standard_name;
   }
