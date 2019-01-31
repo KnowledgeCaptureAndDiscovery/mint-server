@@ -267,7 +267,7 @@ public class MintPlanner {
         //solution.diffGraph(workflow.getGraph(), graph);      
         mgraphs.add(workflow);
       }
-      break;
+      //break;
     }
     //System.out.println(mgraphs.size());
     return mgraphs;
