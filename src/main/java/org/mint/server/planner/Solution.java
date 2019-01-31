@@ -20,6 +20,8 @@ import org.mint.server.classes.model.ModelVariable;
 import org.mint.server.util.Config;
 import org.mint.server.classes.wings.Binding;
 import org.mint.server.classes.wings.ComponentVariable;
+import org.mint.server.classes.wings.Constraint;
+import org.mint.server.classes.wings.ConstraintItem;
 import org.mint.server.classes.wings.IdEntity;
 import org.mint.server.classes.wings.Link;
 import org.mint.server.classes.wings.Node;
@@ -27,6 +29,7 @@ import org.mint.server.classes.wings.Port;
 import org.mint.server.classes.wings.Role;
 import org.mint.server.classes.wings.Variable;
 import org.mint.server.classes.wings.Workflow;
+import org.mint.server.classes.wings.WorkflowWrapper;
 import org.mint.server.repository.impl.MintVocabularyJSON;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -402,7 +405,7 @@ public class Solution implements Comparable<Solution> {
     return tpl;
   }
   
-  public Workflow createWingsWorkflow(WorkflowSolution wflow, String userid, MintPlanner clib) {
+  public WorkflowWrapper createWingsWorkflow(WorkflowSolution wflow, String userid, MintPlanner clib) {
     if(wflow == null)
       return null;
 
@@ -410,21 +413,24 @@ public class Solution implements Comparable<Solution> {
     String wingsServer = cprops.getString("wings.server");
     String wingsDomain = cprops.getString("wings.domain");
     String wingsStorage = cprops.getString("wings.storage");
-    String dotpath = cprops.getString("wings.dotpath");
+    String dotpath = cprops.getString("layout.workflow");
     String ontpfx = cprops.getString("wings.ontology_prefix");
     
     String pfx = wingsServer + "/export/users/" + userid + "/" + wingsDomain;
     String tname = this.getRandomID("workflow");
     String tns = pfx + "/workflows/" + tname + ".owl#";
     String tid = tns + tname;
-    String clibns = pfx + "/components/library.owl#";    
+    String clibns = pfx + "/components/library.owl#";  
+    String dclibns = pfx + "/data/library.owl#";
 
     Workflow tpl = new Workflow(tid);
+    ArrayList<Constraint> constraints = new ArrayList<Constraint>();
 
     HashMap<String, ArrayList<String>> varfiles_hash = new HashMap<String, ArrayList<String>>();
     HashMap<String, SolutionVariable> gvarid_hash = new HashMap<String, SolutionVariable>();
     HashMap<String, Port> port_hash = new HashMap<String, Port>();
     HashMap<String, Node> node_hash = new HashMap<String, Node>();
+    HashMap<String, String> bindings_hash = new HashMap<String, String>();
     HashMap<String, String> port_vartype_hash = new HashMap<String, String>();
     HashMap<String, ArrayList<String>> filevars = new HashMap<String, ArrayList<String>>();
     
@@ -541,7 +547,12 @@ public class Solution implements Comparable<Solution> {
         if(files == null)
           files = new ArrayList<String>();
         files.add(var.getLocalName());
-        varfiles_hash.put(v.getVariable().getID(), files);        
+        varfiles_hash.put(v.getVariable().getID(), files);
+        
+        VariableProvider provider = v.getProvider();
+        if(provider != null && provider.getType() == Type.DATA && provider.getId() != null) {
+          bindings_hash.put(fid, provider.getId());
+        }
       }
       gvarid_hash.put(v.getVariable().getID(), v);      
     }
@@ -751,15 +762,33 @@ public class Solution implements Comparable<Solution> {
       if(link.getFromNode() == null) {
         String roleid = v.getId() + "_irole";
         Role role = new Role(roleid, v.getType());
+        role.setRoleid(link.getToNode().getLocalName()+"_"+v.getLocalName());
         tpl.addInputRole(v.getId(), role);
       }
       if(link.getToNode() == null) {
         String roleid = v.getId() + "_orole";
         Role role = new Role(roleid, v.getType());
+        role.setRoleid(link.getFromNode().getLocalName()+"_"+v.getLocalName());
         tpl.addOutputRole(v.getId(), role);
       }
     }
-    return tpl;
+    
+    // Add constraints
+    for(String varid : bindings_hash.keySet()) {
+      String fname = bindings_hash.get(varid);
+      String bindingid = dclibns + fname;
+      Constraint constraint = new Constraint(
+        new ConstraintItem(varid),
+        new ConstraintItem(ontpfx + "/workflow.owl#hasDataBinding"),
+        new ConstraintItem(bindingid)
+      );
+      constraints.add(constraint);
+    }
+    
+    WorkflowWrapper tpl_wrapper = new WorkflowWrapper();
+    tpl_wrapper.setTemplate(tpl);
+    tpl_wrapper.setConstraints(constraints);
+    return tpl_wrapper;
   }
 
   boolean hasLinksToPort(Workflow tpl, String nid, String pid) {

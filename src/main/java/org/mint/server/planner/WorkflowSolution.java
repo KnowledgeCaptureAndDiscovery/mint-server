@@ -6,6 +6,7 @@ import org.mint.server.classes.URIEntity;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.model.Model;
 import org.mint.server.classes.wings.Workflow;
+import org.mint.server.classes.wings.WorkflowWrapper;
 
 public class WorkflowSolution extends URIEntity {
   private static final long serialVersionUID = 4890370333549158851L;
@@ -14,7 +15,7 @@ public class WorkflowSolution extends URIEntity {
   ArrayList<SolutionVariable> variables; 
   ArrayList<WorkflowLink> links;
   Workflow modelGraph;
-  Workflow wingsWorkflow;
+  WorkflowWrapper wingsWorkflow;
   VariableGraph graph;
   
   public ArrayList<Model> getModels() {
@@ -41,10 +42,10 @@ public class WorkflowSolution extends URIEntity {
   public void setModelGraph(Workflow modelGraph) {
     this.modelGraph = modelGraph;
   }
-  public Workflow getWingsWorkflow() {
+  public WorkflowWrapper getWingsWorkflow() {
     return wingsWorkflow;
   }
-  public void setWingsWorkflow(Workflow wingsWorkflow) {
+  public void setWingsWorkflow(WorkflowWrapper wingsWorkflow) {
     this.wingsWorkflow = wingsWorkflow;
   }
   public VariableGraph getGraph() {

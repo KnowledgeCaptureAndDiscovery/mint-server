@@ -101,7 +101,7 @@ public class MintPlanner {
     
     // Get models that provide variables & types
     for(Model c : models) {
-      if(c.getLocalName().equals("cycles_multiple_points")) // FIXME: HACK
+      if(c.getLocalName().equals("cycles_multiple_points")) // HACK
         continue;
       for(ModelIO op : c.getOutputs()) {
         if(op.getVariables() == null || op.getVariables().size() == 0) {
@@ -145,7 +145,7 @@ public class MintPlanner {
     while(solution_queue.size() > 0) {
       Solution solution = solution_queue.first();
       solution_queue.remove(solution);
-      System.out.println(solution);
+      //System.out.println(solution);
       
       if(temp_list.contains(solution)) {
         continue;
@@ -165,11 +165,11 @@ public class MintPlanner {
         if(cname == null) 
           cname = v.getVariable().getLocalName();
 
-        System.out.println("Checking variable " + cname);
+        //System.out.println("Checking variable " + cname);
         
         // Skip if variable already resolved
         if(v.isResolved()) {
-          System.out.println(v.getVariable().getLabel() + " already resolved. Continue.");
+          //System.out.println(v.getVariable().getLabel() + " already resolved. Continue.");
           continue;
         }
 
@@ -183,7 +183,7 @@ public class MintPlanner {
             for(String dataprov : dataprovs) {
               v.setProvider(new VariableProvider(dataprov, VariableProvider.Type.DATA, null));
             }
-            System.out.println(cname + " has a data provider. Variable resolved. Continue.");
+            //System.out.println(cname + " has a data provider. Variable resolved. Continue.");
             continue;
           }
         }
@@ -202,8 +202,8 @@ public class MintPlanner {
           }
         }
         if(comps.size() > 0) {
-          System.out.println(cname + " has "+ comps.size()+" model providers");
-          System.out.println(comps);
+          //System.out.println(cname + " has "+ comps.size()+" model providers");
+          //System.out.println(comps);
 
           // If more than one model, create extra solutions
           // from 2 onwards
@@ -238,7 +238,7 @@ public class MintPlanner {
           v.setProvider(provider);
         }
       }
-      System.out.println(solution);
+      //System.out.println(solution);
       
       // solution should contain all the models specified
       boolean ok = true;
@@ -261,10 +261,11 @@ public class MintPlanner {
         continue;
       
       // Create workflow for solution
-      WorkflowSolution workflow = solution.createWorkflow(graph, this);
-      if(workflow != null) {
-        workflow.setModelGraph(solution.createModelGraph(workflow, userid));
-        workflow.setWingsWorkflow(solution.createWingsWorkflow(workflow, userid, this));
+      WorkflowSolution workflow = new WorkflowSolution();
+      WorkflowSolution wflowtmp = solution.createWorkflow(graph, this);
+      if(wflowtmp != null) {
+        workflow.setModelGraph(solution.createModelGraph(wflowtmp, userid));
+        workflow.setWingsWorkflow(solution.createWingsWorkflow(wflowtmp, userid, this));
         //workflow.setGraph(solution.createGraph(workflow));
         //solution.diffGraph(workflow.getGraph(), graph);      
         mgraphs.add(workflow);

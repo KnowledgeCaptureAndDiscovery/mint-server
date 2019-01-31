@@ -3,13 +3,13 @@ package org.mint.server.classes.wings;
 import java.util.ArrayList;
 
 public class WorkflowWrapper {
-  ArrayList<Object> constraints;
+  ArrayList<Constraint> constraints;
   Workflow template;
   
-  public ArrayList<Object> getConstraints() {
+  public ArrayList<Constraint> getConstraints() {
     return constraints;
   }
-  public void setConstraints(ArrayList<Object> constraints) {
+  public void setConstraints(ArrayList<Constraint> constraints) {
     this.constraints = constraints;
   }
   public Workflow getTemplate() {
