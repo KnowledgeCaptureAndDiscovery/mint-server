@@ -411,6 +411,9 @@ public class Solution implements Comparable<Solution> {
 
     PropertyListConfiguration cprops = Config.get().getProperties();
     String wingsServer = cprops.getString("wings.server");
+    String alternate = cprops.getString("wings.internal_server");
+    if(alternate != null)
+      wingsServer = alternate;
     String wingsDomain = cprops.getString("wings.domain");
     String wingsStorage = cprops.getString("wings.storage");
     String dotpath = cprops.getString("layout.workflow");
