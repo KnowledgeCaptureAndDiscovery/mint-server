@@ -17,33 +17,34 @@ import org.mint.server.repository.impl.MINTRepositoryJSON;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@Path("users/{userid}/questions/{questionid}/data")
+@Path("users/{userid}/regions/{regionid}/questions/{questionid}/data")
 public class DataResource {
   
   @Context
   HttpServletRequest request;
   
   @PathParam("userid") String userid;
+  @PathParam("regionid") String regionid;
   @PathParam("questionid") String questionid;
   
   @GET
   @Produces("application/json")
   public List<DataSpecification> listDataSpecifications() {
-    return MINTRepositoryJSON.get(userid).listDataSpecifications(questionid);
+    return MINTRepositoryJSON.get(userid, regionid).listDataSpecifications(questionid);
   }
   
   @GET
   @Path("{dsid}")
   @Produces("application/json")
   public DataSpecification getDataSpecification(@PathParam("dsid") String dsname) {
-    String dsid = MINTRepositoryJSON.get(userid).getDataSpecificationURI(questionid, dsname);
-    return MINTRepositoryJSON.get(userid).getDataSpecificationDetails(questionid, dsid);
+    String dsid = MINTRepositoryJSON.get(userid, regionid).getDataSpecificationURI(questionid, dsname);
+    return MINTRepositoryJSON.get(userid, regionid).getDataSpecificationDetails(questionid, dsid);
   }
   
   @POST
   @Produces("application/json")
   public String addDataSpecification(@JsonProperty("ds") DataSpecification ds) {
-    MINTRepositoryJSON repo = MINTRepositoryJSON.get(userid);
+    MINTRepositoryJSON repo = MINTRepositoryJSON.get(userid, regionid);
     String dsid = repo.getRandomID("ds-");
     ds.setID(repo.getDataSpecificationURI(questionid, dsid));
     return repo.addDataSpecification(questionid, ds);
@@ -53,14 +54,14 @@ public class DataResource {
   @Path("{dsid}")
   @Produces("application/json")
   public void deleteDataSpecification(@PathParam("dsid") String dsname) {
-    String dsid = MINTRepositoryJSON.get(userid).getDataSpecificationURI(questionid, dsname);    
-    MINTRepositoryJSON.get(userid).deleteDataSpecification(questionid, dsid);
+    String dsid = MINTRepositoryJSON.get(userid, regionid).getDataSpecificationURI(questionid, dsname);    
+    MINTRepositoryJSON.get(userid, regionid).deleteDataSpecification(questionid, dsid);
   }
   
   @PUT
   @Path("{dsid}")
   @Produces("application/json")
   public void updateDataSpecification(@JsonProperty("ds") DataSpecification ds) {
-    MINTRepositoryJSON.get(userid).updateDataSpecification(questionid, ds);
+    MINTRepositoryJSON.get(userid, regionid).updateDataSpecification(questionid, ds);
   }
 }

@@ -15,7 +15,7 @@ import org.mint.server.repository.impl.MINTRepositoryJSON;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@Path("users/{userid}/graphs")
+@Path("users/{userid}/regions/{regionid}/cag")
 public class GraphResource {
   MintRepository repo;
   
@@ -23,27 +23,25 @@ public class GraphResource {
   HttpServletRequest request;
   
   @PathParam("userid") String userid;
+  @PathParam("regionid") String regionid;
   
   @POST
   public String addGraph(@JsonProperty("graph") VariableGraph graph) {
-    return MINTRepositoryJSON.get(userid).addVariableGraph(graph);
+    return MINTRepositoryJSON.get(userid, regionid).addVariableGraph(graph);
   }
   
   @PUT
-  @Path("{graphid}")
   public void updateGraph(@JsonProperty("graph") VariableGraph graph) {
-    MINTRepositoryJSON.get(userid).updateVariableGraph(graph);
+    MINTRepositoryJSON.get(userid, regionid).updateVariableGraph(graph);
   }
   
   @GET
-  @Path("{graphid}")
-  public VariableGraph getGraph(@PathParam("graphid") String graphid) {
-    return MINTRepositoryJSON.get(userid).getVariableGraph(graphid);
+  public VariableGraph getGraph() {
+    return MINTRepositoryJSON.get(userid, regionid).getVariableGraph();
   }
   
   @DELETE
-  @Path("{graphid}")
-  public void deleteGraph(@PathParam("graphid") String graphid) {
-    MINTRepositoryJSON.get(userid).deleteVariableGraph(graphid);
+  public void deleteGraph() {
+    MINTRepositoryJSON.get(userid, regionid).deleteVariableGraph();
   }
 }

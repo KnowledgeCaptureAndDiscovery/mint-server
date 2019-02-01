@@ -16,8 +16,6 @@ import org.mint.server.classes.EnsembleSpecification;
 import org.mint.server.classes.InterventionSpecification;
 import org.mint.server.classes.Region;
 import org.mint.server.classes.Task;
-import org.mint.server.classes.graph.Relation;
-import org.mint.server.classes.graph.GVariable;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.question.ModelingQuestion;
 import org.mint.server.classes.vocabulary.TaskType;
@@ -32,13 +30,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 
 public class MINTRepositoryJSON implements MintRepository {
-  String server, storage, userid;
+  String server, repo_server, storage, userid, regionid;
   
   String REGIONS_FILE = "regions.json";
   String REGIONS_DIR = "regions";
   String QUESTIONS_FILE = "questions.json";
   String QUESTIONS_DIR = "questions";
   String VARIABLE_GRAPH_FILE = "variable_graph.json";
+  String CAG_FILE = "cag.json";
   
   ObjectMapper mapper;
   MintVocabulary vocabulary = null;
@@ -46,26 +45,33 @@ public class MINTRepositoryJSON implements MintRepository {
   static HashMap<String, MINTRepositoryJSON> repocache = 
       new HashMap<String, MINTRepositoryJSON>();
 
-  public static MINTRepositoryJSON get(String userid) {
-    if(!repocache.containsKey(userid))
-      repocache.put(userid, new MINTRepositoryJSON(userid));
-    return repocache.get(userid);
+  public static MINTRepositoryJSON get(String userid, String regionid) {
+    String cachekey = userid + "-" + regionid;
+    if(!repocache.containsKey(cachekey))
+      repocache.put(cachekey, new MINTRepositoryJSON(userid, regionid));
+    return repocache.get(cachekey);
   }
   
-  public MINTRepositoryJSON(String userid) {
-    setConfiguration(userid);
+  public MINTRepositoryJSON(String userid, String regionid) {
+    setConfiguration(userid, regionid);
     this.vocabulary = MintVocabularyJSON.get();
   }
   
   /* Helper Functions */
   
-  private void setConfiguration(String userid) {
-    this.userid = userid;
-    PropertyListConfiguration props = Config.get().getProperties();
-    this.server = props.getString("server");
-    this.storage = props.getString("storage") + File.separator + "users" + File.separator + userid;
+  private void setConfiguration(String userid, String regionid) {
     this.mapper = new ObjectMapper();
+    this.userid = userid;
+    this.regionid = regionid;
     
+    PropertyListConfiguration props = Config.get().getProperties();
+    this.server = props.getString("server")
+        + "/users/" + userid 
+        + "/regions/" + regionid;
+    
+    this.storage = props.getString("storage") + File.separator 
+        + "users" + File.separator + userid + File.separator
+        + "regions" + File.separator + regionid;
     File dirf = new File(this.storage);
     if(!dirf.exists() && !dirf.mkdirs()) {
       System.err.println("Cannot create storage directory : "+dirf.getAbsolutePath());
@@ -78,19 +84,19 @@ public class MINTRepositoryJSON implements MintRepository {
   
   /* Get rest api uris */
   public String getQuestionURI(String questionid) {
-    return this.server + "/users/" + this.userid + "/questions/" + questionid;
+    return this.server + "/questions/" + questionid;
   }
 
   public String getTaskURI(String questionid, String taskid) {
-    return this.server + "/users/" + this.userid + "/questions/" + questionid + "/tasks/" + taskid;
+    return this.server + "/questions/" + questionid + "/tasks/" + taskid;
   }
   
   public String getDataSpecificationURI(String questionid, String dsid) {
-    return this.server + "/users/" + this.userid + "/questions/" + questionid + "/data/" + dsid;
+    return this.server + "/questions/" + questionid + "/data/" + dsid;
   }
   
   public String getGraphURI(String graphid) {
-    return this.server + "/users/" + this.userid + "/graphs/" + graphid;
+    return this.server + "/cag";
   }
   /* End of Get rest api uris */
   
@@ -118,13 +124,8 @@ public class MINTRepositoryJSON implements MintRepository {
     return qfile;
   }
   
-  private String getGraphFile(String graphid) {
-    String graphdir = this.storage + File.separator + "graphs";
-    File dir = new File(graphdir);
-    if(!dir.exists()) {
-      dir.mkdir();
-    }
-    return graphdir + File.separator + graphid + ".json";
+  private String getGraphFile() {
+    return this.storage + File.separator + CAG_FILE;
   }
   
   private String getTasksFile(String questionid) {
@@ -214,7 +215,7 @@ public class MINTRepositoryJSON implements MintRepository {
   }
   
   @Override
-  public ArrayList<ModelingQuestion> listAllModelingQuestions() {
+  public ArrayList<ModelingQuestion> listModelingQuestions() {
     CollectionType questionList = mapper.getTypeFactory()
         .constructCollectionType(ArrayList.class, ModelingQuestion.class);    
     try {
@@ -224,36 +225,10 @@ public class MINTRepositoryJSON implements MintRepository {
     }
     return null;
   }
-  
-  private ArrayList<String> getAllRegionIds(Region region) {
-    ArrayList<String> regionids = new ArrayList<String>();
-    regionids.add(region.getID());
-    if(region.getSubRegions() != null)
-      for(Region subRegion : region.getSubRegions()) 
-        regionids.addAll(this.getAllRegionIds(subRegion));
-
-    return regionids;
-  }
-  
-  @Override
-  public ArrayList<ModelingQuestion> listModelingQuestions(String regionid) {
-    if(regionid == null) 
-      return this.listAllModelingQuestions();
-    
-    ArrayList<ModelingQuestion> filteredList = new ArrayList<ModelingQuestion>();
-    Region region = this.getRegionDetails(regionid);
-    if(region == null)
-      return null;
-    ArrayList<String> regionids = getAllRegionIds(region);
-    for(ModelingQuestion question : this.listAllModelingQuestions())
-      if(regionids.contains(question.getRegion()))
-        filteredList.add(question);
-    return filteredList;
-  }
 
   @Override
   public ModelingQuestion getModelingQuestionDetails(String questionid) {
-    for(ModelingQuestion question: this.listAllModelingQuestions()) {
+    for(ModelingQuestion question: this.listModelingQuestions()) {
       if(question.getID().equals(questionid))
         return question;
     }
@@ -270,7 +245,7 @@ public class MINTRepositoryJSON implements MintRepository {
   @Override
   public String addModelingQuestion(ModelingQuestion question) {
     // Add question to list and write to file
-    ArrayList<ModelingQuestion> questions = this.listAllModelingQuestions();
+    ArrayList<ModelingQuestion> questions = this.listModelingQuestions();
     questions.add(question);
     this.writeModelingQuestions(questions);
     
@@ -306,7 +281,7 @@ public class MINTRepositoryJSON implements MintRepository {
 
   @Override
   public void updateModelingQuestion(ModelingQuestion newquestion) {
-    ArrayList<ModelingQuestion> questions = this.listAllModelingQuestions();
+    ArrayList<ModelingQuestion> questions = this.listModelingQuestions();
     ArrayList<ModelingQuestion> newquestions = new ArrayList<ModelingQuestion>();
 
     for(ModelingQuestion question : questions) {
@@ -320,7 +295,7 @@ public class MINTRepositoryJSON implements MintRepository {
 
   @Override
   public void deleteModelingQuestion(String questionid) {
-    ArrayList<ModelingQuestion> questions = this.listAllModelingQuestions();
+    ArrayList<ModelingQuestion> questions = this.listModelingQuestions();
     ArrayList<ModelingQuestion> newquestions = new ArrayList<ModelingQuestion>();
 
     for(ModelingQuestion question : questions) {
@@ -338,18 +313,17 @@ public class MINTRepositoryJSON implements MintRepository {
   /* Start of Variable Graph */
   
   private void writeGraph(VariableGraph graph) {
-    String gname = graph.getID().substring(graph.getID().lastIndexOf("/"));
     try {
       this.mapper.writerWithDefaultPrettyPrinter().writeValue(
-          new FileOutputStream(this.getGraphFile(gname)), graph);
+          new FileOutputStream(this.getGraphFile()), graph);
     } catch (IOException e) {
       e.printStackTrace();
     }
   }
   
   @Override
-  public VariableGraph getVariableGraph(String graphid) {
-    String graphfile = this.storage + File.separator + "graphs" + File.separator + graphid + ".json";
+  public VariableGraph getVariableGraph() {
+    String graphfile = this.storage + File.separator + CAG_FILE;
     try {
       return this.mapper.readValue(new FileInputStream(graphfile), VariableGraph.class);
     } catch (IOException e) {
@@ -360,18 +334,6 @@ public class MINTRepositoryJSON implements MintRepository {
 
   @Override
   public String addVariableGraph(VariableGraph graph) {
-    // Rewriting existing id of graph
-    String origid = graph.getID();
-    String randomid = this.getRandomID("graph-");
-    String newid = this.getGraphURI(randomid);
-    graph.setID(newid);
-    for(GVariable v : graph.getVariables()) {
-      v.setID(v.getID().replace(origid, newid));
-    }
-    for(Relation l : graph.getLinks()) {
-      l.setFrom(l.getFrom().replace(origid, newid));
-      l.setTo(l.getTo().replace(origid, newid));
-    }
     // Write the graph
     this.writeGraph(graph);
     return graph.getID();
@@ -383,8 +345,8 @@ public class MINTRepositoryJSON implements MintRepository {
   }
 
   @Override
-  public void deleteVariableGraph(String graphid) {
-    String fpath = this.getGraphFile(graphid);
+  public void deleteVariableGraph() {
+    String fpath = this.getGraphFile();
     new File(fpath).delete();
   }
   

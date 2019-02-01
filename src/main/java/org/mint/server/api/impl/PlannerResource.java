@@ -14,29 +14,29 @@ import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.question.ModelingQuestion;
 import org.mint.server.planner.WorkflowSolution;
 import org.mint.server.repository.impl.MINTRepositoryJSON;
-import org.mint.server.repository.impl.MintVocabularyJSON;
 
 
-@Path("users/{userid}/questions/{questionid}/planner")
+@Path("users/{userid}/regions/{regionid}/questions/{questionid}/planner")
 public class PlannerResource {
   
   @Context
   HttpServletRequest request;
   
   @PathParam("userid") String userid;
+  @PathParam("regionid") String regionid;
   @PathParam("questionid") String questionid;
   
   @GET
   @Path("compose/{dsid}")
   @Produces("application/json")
   public ArrayList<WorkflowSolution> createWorkflowSolutions(@PathParam("dsid") String dsid) {
-    MINTRepositoryJSON repo = MINTRepositoryJSON.get(userid);
+    MINTRepositoryJSON repo = MINTRepositoryJSON.get(userid, regionid);
     String quri = repo.getQuestionURI(questionid);
     ModelingQuestion question = repo.getModelingQuestionDetails(quri);
-    VariableGraph graph = MintVocabularyJSON.get().getGraph(question.getGraph());
+    // The graph name is the same as the region name
+    VariableGraph graph = repo.getVariableGraph();
     String dsuri = repo.getDataSpecificationURI(questionid, dsid);
     DataSpecification ds = repo.getDataSpecificationDetails(questionid, dsuri);
-    return repo.createWorkflowSolutions(
-        question, graph, ds);
+    return repo.createWorkflowSolutions(question, graph, ds);
   }
 }

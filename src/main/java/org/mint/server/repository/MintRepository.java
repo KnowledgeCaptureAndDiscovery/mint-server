@@ -23,8 +23,7 @@ public interface MintRepository {
   public void deleteRegion(String id);
   
   // ModelingQuestion
-  public ArrayList<ModelingQuestion> listAllModelingQuestions();
-  public ArrayList<ModelingQuestion> listModelingQuestions(String regionid);
+  public ArrayList<ModelingQuestion> listModelingQuestions();
   public ModelingQuestion getModelingQuestionDetails(String questionid);
   public void setModelingQuestionGraph(String questionid, String graphid);
   public String addModelingQuestion(ModelingQuestion question);
@@ -32,10 +31,10 @@ public interface MintRepository {
   public void deleteModelingQuestion(String questionid);
   
   // VariableGraph
-  public VariableGraph getVariableGraph(String questionid);
+  public VariableGraph getVariableGraph();
   public String addVariableGraph(VariableGraph graph);
   public void updateVariableGraph(VariableGraph graph);
-  public void deleteVariableGraph(String graphid);
+  public void deleteVariableGraph();
   
   // Task
   public ArrayList<Task> listTasks(String questionid);

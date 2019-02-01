@@ -17,33 +17,34 @@ import org.mint.server.repository.impl.MINTRepositoryJSON;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@Path("users/{userid}/questions/{questionid}/tasks")
+@Path("users/{userid}/regions/{regionid}/questions/{questionid}/tasks")
 public class TaskResource {
 
   @Context
   HttpServletRequest request;
   
   @PathParam("userid") String userid;
+  @PathParam("regionid") String regionid;
   @PathParam("questionid") String questionid;
   
   @GET
   @Produces("application/json")
   public List<Task> listTasks() {
-    return MINTRepositoryJSON.get(userid).listTasks(questionid);
+    return MINTRepositoryJSON.get(userid, regionid).listTasks(questionid);
   }
   
   @GET
   @Path("{taskid}")
   @Produces("application/json")
   public Task getTask(@PathParam("taskid") String tname) {
-    String taskid = MINTRepositoryJSON.get(userid).getTaskURI(questionid, tname);
-    return MINTRepositoryJSON.get(userid).getTaskDetails(questionid, taskid);
+    String taskid = MINTRepositoryJSON.get(userid, regionid).getTaskURI(questionid, tname);
+    return MINTRepositoryJSON.get(userid, regionid).getTaskDetails(questionid, taskid);
   }
   
   @POST
   @Produces("application/json")
   public String addTask(@JsonProperty("task") Task task) {
-    MINTRepositoryJSON repo = MINTRepositoryJSON.get(userid);
+    MINTRepositoryJSON repo = MINTRepositoryJSON.get(userid, regionid);
     String taskid = repo.getRandomID("task-");
     task.setID(repo.getTaskURI(questionid, taskid));
     return repo.addTask(questionid, task);
@@ -53,14 +54,14 @@ public class TaskResource {
   @Path("{taskid}")
   @Produces("application/json")
   public void deleteTask(@PathParam("taskid") String tname) {
-    String taskid = MINTRepositoryJSON.get(userid).getTaskURI(questionid, tname);
-    MINTRepositoryJSON.get(userid).deleteTask(questionid, taskid);
+    String taskid = MINTRepositoryJSON.get(userid, regionid).getTaskURI(questionid, tname);
+    MINTRepositoryJSON.get(userid, regionid).deleteTask(questionid, taskid);
   }
   
   @PUT
   @Path("{taskid}")
   @Produces("application/json")
   public void updateTask(@JsonProperty("task") Task task) {
-    MINTRepositoryJSON.get(userid).updateTask(questionid, task);
+    MINTRepositoryJSON.get(userid, regionid).updateTask(questionid, task);
   }
 }

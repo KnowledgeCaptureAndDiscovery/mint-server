@@ -13,24 +13,25 @@ import org.mint.server.repository.impl.MINTRepositoryJSON;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-@Path("users/{userid}/questions/{questionid}/workflows")
+@Path("users/{userid}/regions/{regionid}/questions/{questionid}/workflows")
 public class WorkflowResource {
 
   @Context
   HttpServletRequest request;
   
   @PathParam("userid") String userid;
+  @PathParam("regionid") String regionid;
   @PathParam("questionid") String questionid;
   
   @POST
   @Produces("application/json")
   public String addWorkflow(@JsonProperty("wflow") TempWorkflowDetails wflow) {
-    return MINTRepositoryJSON.get(userid).saveWorkflow(questionid, wflow);
+    return MINTRepositoryJSON.get(userid, regionid).saveWorkflow(questionid, wflow);
   }
   
   @GET
   @Produces("application/json")
   public TempWorkflowDetails getWorkflow() {
-    return MINTRepositoryJSON.get(userid).getWorkflow(questionid);
+    return MINTRepositoryJSON.get(userid, regionid).getWorkflow(questionid);
   }
 }

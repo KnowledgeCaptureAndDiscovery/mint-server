@@ -158,13 +158,6 @@ public class MintPlanner {
 
       while(varqueue.size() > 0) {
         SolutionVariable v = varqueue.remove(0);
-        String cname = vocabulary.getCanonicalName(v.getVariable().getStandard_names());
-        String vtype = v.getType();
-
-        // Create dummy canonical name
-        if(cname == null) 
-          cname = v.getVariable().getLocalName();
-
         //System.out.println("Checking variable " + cname);
         
         // Skip if variable already resolved
@@ -172,33 +165,53 @@ public class MintPlanner {
           //System.out.println(v.getVariable().getLabel() + " already resolved. Continue.");
           continue;
         }
-
-        // Check data provider
-        if(data_providers.containsKey(cname)) {
-          // Mark variable as resolved
-          v.setResolved(true);
-          ArrayList<String> dataprovs = data_providers.get(cname);
-          if(dataprovs.size() > 0) {
-            // TODO: Mark multiple solutions for multiple data providers ?
-            for(String dataprov : dataprovs) {
-              v.setProvider(new VariableProvider(dataprov, VariableProvider.Type.DATA, null));
-            }
-            //System.out.println(cname + " has a data provider. Variable resolved. Continue.");
-            continue;
+        
+        ArrayList<String> stdnames = v.getVariable().getStandard_names();
+        ArrayList<String> cnames = new ArrayList<String>();
+        if(stdnames != null) {
+          for(String stdname : stdnames) {
+            String cname = vocabulary.getCanonicalName(stdname);
+            cnames.add(cname);
           }
         }
+        if(cnames.size() == 0)
+          cnames.add(v.getVariable().getLocalName());
+
+        for(String cname : cnames) {
+          // Check data provider
+          if(data_providers.containsKey(cname)) {
+            // Mark variable as resolved
+            v.setResolved(true);
+            ArrayList<String> dataprovs = data_providers.get(cname);
+            if(dataprovs.size() > 0) {
+              // TODO: Mark multiple solutions for multiple data providers ?
+              for(String dataprov : dataprovs) {
+                v.setProvider(new VariableProvider(dataprov, VariableProvider.Type.DATA, null));
+              }
+              //System.out.println(cname + " has a data provider. Variable resolved. Continue.");
+              break;
+            }
+          }
+        }
+        if(v.isResolved())
+          continue;
 
         // Check model provider
         ArrayList<Model> comps = new ArrayList<Model>();
+        
         // If type exists, then check for type matches
+        String vtype = v.getType();
         if(vtype != null) {
           if(comp_type_providers.containsKey(vtype)) {
             comps = comp_type_providers.get(vtype);
           }
         }
         else {
-          if(comp_providers.containsKey(cname)) {
-            comps = comp_providers.get(cname);
+          for(String cname : cnames) {
+            if(comp_providers.containsKey(cname)) {
+              comps = comp_providers.get(cname);
+              break;
+            }
           }
         }
         if(comps.size() > 0) {
