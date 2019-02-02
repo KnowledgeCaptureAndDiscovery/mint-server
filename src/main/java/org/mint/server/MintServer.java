@@ -14,6 +14,8 @@ import org.mint.server.api.impl.WorkflowResource;
 import org.mint.server.filters.AcceptHeaderFilter;
 import org.mint.server.filters.CORSResponseFilter;
 import org.mint.server.filters.ConfigLoadFilter;
+import org.mint.server.filters.GZIPReaderInterceptor;
+import org.mint.server.filters.GZIPWriterInterceptor;
 
 class MintServer extends ResourceConfig {
 
@@ -22,6 +24,9 @@ class MintServer extends ResourceConfig {
     register(ConfigLoadFilter.class);
     register(AcceptHeaderFilter.class);
     register(CORSResponseFilter.class);
+    
+    register(GZIPWriterInterceptor.class);
+    register(GZIPReaderInterceptor.class);
     
     // Main Resources
     register(CommonResource.class);    

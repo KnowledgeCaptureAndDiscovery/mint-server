@@ -101,8 +101,8 @@ public class MintPlanner {
     
     // Get models that provide variables & types
     for(Model c : models) {
-      if(c.getLocalName().equals("cycles_multiple_points")) // HACK
-        continue;
+      /*if(c.getLocalName().equals("cycles_multiple_points")) // HACK
+        continue;*/
       for(ModelIO op : c.getOutputs()) {
         if(op.getVariables() == null || op.getVariables().size() == 0) {
           op.setVariables(this.createDummyVariables(op));
@@ -137,6 +137,9 @@ public class MintPlanner {
     System.out.println(data_providers);
     */
 
+    int numsolutions = 0;
+    int maxsolutions = 10;
+    
     // Create solutions
     ArrayList<Solution> temp_list = new ArrayList<Solution>();
     TreeSet<Solution> solution_queue = new TreeSet<Solution>();
@@ -273,6 +276,10 @@ public class MintPlanner {
       if(!ok)
         continue;
       
+      numsolutions++;
+      if(numsolutions > maxsolutions) {
+        break;
+      }
       // Create workflow for solution
       WorkflowSolution workflow = new WorkflowSolution();
       WorkflowSolution wflowtmp = solution.createWorkflow(graph, this);

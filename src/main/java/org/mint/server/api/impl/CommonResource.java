@@ -3,16 +3,19 @@ package org.mint.server.api.impl;
 import java.util.HashMap;
 import java.util.List;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
 
 import org.mint.server.classes.Region;
 import org.mint.server.classes.StandardName;
 import org.mint.server.classes.model.Model;
+import org.mint.server.classes.util.StorageHandler;
 import org.mint.server.classes.vocabulary.TaskType;
 import org.mint.server.classes.vocabulary.WorkflowPointer;
 import org.mint.server.repository.impl.MintVocabularyJSON;
@@ -24,10 +27,20 @@ public class CommonResource {
   @Context
   HttpServletRequest request;
   
+  @Context
+  ServletContext context;
+  
   @GET
   @Path("reload")
   public String reload() {
-    MintVocabularyJSON.get().reload();
+    MintVocabularyJSON.get().reload(true);
+    return "OK";
+  }
+  
+  @GET
+  @Path("reload/config")
+  public String reloadConfig() {
+    MintVocabularyJSON.get().reload(false);
     return "OK";
   }
   
@@ -63,6 +76,15 @@ public class CommonResource {
   }
   
   @GET
+  @Path("geo/{regionid}")
+  @Produces("application/json")
+  public Response getGeoJson(@PathParam("regionid") String regionid) {
+    MintVocabularyJSON vocab = MintVocabularyJSON.get();
+    String fullpath = vocab.getBoundaryFile(regionid);
+    return StorageHandler.streamFile(fullpath, context);
+  }
+  
+  @GET
   @Path("models")
   @Produces("application/json")
   public List<Model> getModels() {
@@ -89,4 +111,5 @@ public class CommonResource {
   public List<WorkflowPointer> getWorkflowPointers() {
     return MintVocabularyJSON.get().getWorkflows();
   }
+
 }

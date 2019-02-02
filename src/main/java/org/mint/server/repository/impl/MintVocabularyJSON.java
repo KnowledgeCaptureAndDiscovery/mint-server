@@ -83,18 +83,19 @@ public class MintVocabularyJSON implements MintVocabulary {
     models = new LinkedHashMap<String, Model>();
     
     setConfiguration();
-    load();
+    load(true);
   }
   
-  public void reload() {
+  public void reload(boolean reloadModels) {
     regions.clear();
     allRegions.clear();
     taskTypes.clear();
     standardNames.clear();
     workflows.clear();
-    models.clear();
+    if(reloadModels)
+      models.clear();
     
-    this.load();
+    this.load(reloadModels);
   }
   
   /* Helper Functions */
@@ -119,7 +120,7 @@ public class MintVocabularyJSON implements MintVocabulary {
     return this.server + "/" + COMMON_DIR + "/" + dirname + "/" + name;
   }
   
-  private void load() {
+  private void load(boolean loadModels) {
     try {
       // Load vocabulary
       
@@ -156,10 +157,12 @@ public class MintVocabularyJSON implements MintVocabulary {
       this.setWorkflows(pointers);
       
       // Load models from Model Catalog
-      this.models = new LinkedHashMap<String, Model>();
-      // Set models from Model Catalog
-      ArrayList<Model> modelList = this.fetchModelsFromCatalog();
-      this.setModels(modelList);
+      if(loadModels) {
+        this.models = new LinkedHashMap<String, Model>();
+        // Set models from Model Catalog
+        ArrayList<Model> modelList = this.fetchModelsFromCatalog();
+        this.setModels(modelList);
+      }
 
     } catch (IOException e) {
       e.printStackTrace();
@@ -412,6 +415,10 @@ public class MintVocabularyJSON implements MintVocabulary {
         return cname;
     }
     return cname;
+  }
+  
+  public String getBoundaryFile(String region_name) {
+    return this.getFullPath( "geo" + File.separator + region_name + ".json" );
   }
   
   public Model getModel(String id) {
