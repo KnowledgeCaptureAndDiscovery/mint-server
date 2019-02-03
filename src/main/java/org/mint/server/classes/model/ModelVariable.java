@@ -12,6 +12,7 @@ public class ModelVariable extends URIEntity {
   
   public ModelVariable(ModelVariable from) {
     this.setID(from.getID());
+    this.setLabel(from.getLabel());
     this.units = from.getUnits();
     this.standard_name = from.getStandard_name();
   }

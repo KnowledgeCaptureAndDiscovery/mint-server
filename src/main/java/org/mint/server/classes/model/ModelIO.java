@@ -14,6 +14,7 @@ public class ModelIO extends URIEntity {
 
   public ModelIO(ModelIO from) {
     this.setID(from.getID());
+    this.setLabel(from.getLabel());
     this.setType(from.getType());
     this.setDimensionality(from.getDimensionality());
     this.variables = new ArrayList<ModelVariable>();
