@@ -478,6 +478,7 @@ public class Solution implements Comparable<Solution> {
       String cId = clibns + cvarName;
       Binding b = new Binding(cId);
       cvar.setBinding(b);
+      cvar.setConcrete(true);
       //cvar.setLabel(c.getLabel());
       Node node = new Node(cvarId+"_node");
       node.setComponentVariable(cvar);
