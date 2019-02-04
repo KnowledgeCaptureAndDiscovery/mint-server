@@ -16,6 +16,7 @@ import org.mint.server.classes.EnsembleSpecification;
 import org.mint.server.classes.InterventionSpecification;
 import org.mint.server.classes.Region;
 import org.mint.server.classes.Task;
+import org.mint.server.classes.UserSelections;
 import org.mint.server.classes.graph.VariableGraph;
 import org.mint.server.classes.question.ModelingQuestion;
 import org.mint.server.classes.vocabulary.TaskType;
@@ -602,6 +603,15 @@ public class MINTRepositoryJSON implements MintRepository {
   public MintVocabulary getVocabulary() {
     // TODO Auto-generated method stub
     return this.vocabulary;
+  }
+  
+  public UserSelections getUserSelections(String qname) {
+    UserSelections selections = new UserSelections();
+    String questionid = this.getQuestionURI(qname);
+    selections.setQuestion(this.getModelingQuestionDetails(questionid));
+    selections.setData(this.listDataSpecifications(qname));
+    selections.setTasks(this.listTasks(qname));
+    return selections;
   }
   
   /* Temporary APIs */

@@ -233,6 +233,10 @@ public class Solution implements Comparable<Solution> {
             //continue;
             //return null;
           }
+          if(c.getID().equals(v.getProvider().getId())) {
+            // Ignore the link if it connects to itself
+            continue;
+          }
           WorkflowLink link = 
               new WorkflowLink(v.getProvider().getId(), c.getID(), 
                   v.getVariable().getID(), ip.getType(), v.getProvider().getType());
@@ -389,6 +393,7 @@ public class Solution implements Comparable<Solution> {
         Node toNode = node_hash.get(l.getTo());
         Port fromPort = port_hash.get(fromNode.getId() + "_out_" + roleid);
         Port toPort = port_hash.get(toNode.getId() + "_in_" + roleid);
+        System.out.println(l.getFrom() + " -> " + l.getTo() + " : " + roleid);
         String linkid = fromPort.getId() + "_to_" + toNode.getLocalName() + "_in_" + roleid;
         Link link = new Link(linkid, fromNode.getId(), fromPort.getId(), 
             toNode.getId(), toPort.getId(), var.getId());
@@ -763,6 +768,9 @@ public class Solution implements Comparable<Solution> {
     for(String lid : tpl.getLinks().keySet()) {
       Link link = tpl.getLink(lid);
       Variable v = tpl.getVariable(link.getVariable().getId());
+      if(v == null)
+        return null;
+      System.out.println(link.getVariable().getId());
       if(link.getFromNode() == null) {
         String roleid = v.getId() + "_irole";
         Role role = new Role(roleid, v.getType());

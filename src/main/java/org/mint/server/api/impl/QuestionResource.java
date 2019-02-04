@@ -12,10 +12,13 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 
+import org.mint.server.classes.UserSelections;
 import org.mint.server.classes.question.ModelingQuestion;
 import org.mint.server.repository.impl.MINTRepositoryJSON;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.jaxrs.annotation.JacksonFeatures;
 
 @Path("users/{userid}/regions/{regionid}/questions")
 public class QuestionResource {  
@@ -63,5 +66,13 @@ public class QuestionResource {
   @Produces("application/json")
   public void updateModelingQuestion(@JsonProperty("question") ModelingQuestion question) {
     MINTRepositoryJSON.get(userid, regionid).updateModelingQuestion(question);
+  }
+  
+  @GET
+  @Path("{questionid}/selections")
+  @Produces("application/json")
+  @JacksonFeatures(serializationEnable =  { SerializationFeature.INDENT_OUTPUT })
+  public UserSelections getUserSelections(@PathParam("questionid") String qname) {
+    return MINTRepositoryJSON.get(userid, regionid).getUserSelections(qname);
   }
 }
