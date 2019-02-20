@@ -5,8 +5,6 @@ services:
     build:
       context: .
       dockerfile: mint-docker/docker/default/Dockerfile
-    environment:
-      mint_MODE: dind
     volumes:
       - mint_data:/opt/mint
       - /var/run/docker.sock:/var/run/docker.sock
