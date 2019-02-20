@@ -1,0 +1,7 @@
+#Environment dev
+version: '3'
+services:
+  wings:
+    image: "mint-project/server:latest"
+    ports:
+      - 7002:8080
