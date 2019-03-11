@@ -4,6 +4,7 @@ public class Role extends IdEntity{
   int type;
   String roleid;
   int dimensionality;
+  int relevance;
   
   public Role() {}
   
@@ -30,4 +31,10 @@ public class Role extends IdEntity{
   public void setDimensionality(int dimensionality) {
     this.dimensionality = dimensionality;
   }
+  public int getRelevance() {
+    return relevance;
+  }
+  public void setRelevance(int relevance) {
+    this.relevance = relevance;
+  }  
 }

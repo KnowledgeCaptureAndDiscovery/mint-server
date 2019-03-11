@@ -10,6 +10,7 @@ public class Variable extends IdEntity {
   boolean autofill;
   boolean breakpoint;
   String category;
+  
   HashMap<String, ArrayList<String>> extra;
   
   public Variable() {}
