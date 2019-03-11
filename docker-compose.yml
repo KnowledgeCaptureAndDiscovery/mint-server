@@ -1,0 +1,13 @@
+version: '3'
+services:
+  mint-server:
+    image: "mint-project/server:latest"
+    build:
+      context: .
+      dockerfile: mint-docker/docker/default/Dockerfile
+    volumes:
+      - mint_data:/opt/mint
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  mint_data:

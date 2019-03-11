@@ -1,0 +1,10 @@
+#Environment staging
+version: '3'
+services:
+  mint-server:
+    image: "mint-project/server:staging"
+    build:
+      context: .
+      dockerfile: mint-docker/docker/default/Dockerfile    
+    ports:
+      - 7001:8080

@@ -1,0 +1,10 @@
+#Environment dev
+version: '3'
+services:
+  mint-server:
+    image: "mint-project/server:dev"
+    build:
+      context: .
+      dockerfile: mint-docker/docker/default/Dockerfile
+    ports:
+      - 7000:8080
