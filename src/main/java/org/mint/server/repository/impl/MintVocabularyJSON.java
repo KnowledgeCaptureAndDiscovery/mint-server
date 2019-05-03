@@ -280,6 +280,7 @@ public class MintVocabularyJSON implements MintVocabulary {
       String units = kv.get("units");
       String stdname = kv.get("st");
       String dimensionality = kv.get("dim");
+      String relevance = kv.get("rl");
       
       boolean isinput = ioprop.endsWith("hasInput");
       ModelIO io = isinput ? inputs.get(ioid) : outputs.get(ioid);
@@ -302,6 +303,10 @@ public class MintVocabularyJSON implements MintVocabulary {
         mv.setID(vid);
         mv.setUnits(units);
         mv.setStandard_name(stdname);
+        if(relevance != null)
+          mv.setRelevance(Integer.parseInt(relevance));
+        else
+          mv.setRelevance(1);
         io.addVariable(mv);
       }
       if(isinput)

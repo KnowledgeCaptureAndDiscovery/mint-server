@@ -14,6 +14,7 @@ import org.mint.server.classes.model.Model;
 import org.mint.server.classes.model.ModelIO;
 import org.mint.server.classes.model.ModelVariable;
 import org.mint.server.classes.question.ModelingQuestion;
+import org.mint.server.classes.wings.WorkflowWrapper;
 import org.mint.server.repository.impl.MintVocabularyJSON;
 
 
@@ -285,7 +286,11 @@ public class MintPlanner {
       WorkflowSolution wflowtmp = solution.createWorkflow(graph, this);
       if(wflowtmp != null) {
         workflow.setModelGraph(solution.createModelGraph(wflowtmp, userid));
-        workflow.setWingsWorkflow(solution.createWingsWorkflow(wflowtmp, userid, this));
+        WorkflowWrapper wflow = solution.createWingsWorkflow(wflowtmp, userid, this);
+        if(wflow == null)
+          continue;
+        
+        workflow.setWingsWorkflow(wflow);
         //workflow.setGraph(solution.createGraph(workflow));
         //solution.diffGraph(workflow.getGraph(), graph);      
         mgraphs.add(workflow);

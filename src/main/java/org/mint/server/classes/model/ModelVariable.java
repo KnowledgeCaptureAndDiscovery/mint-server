@@ -7,6 +7,7 @@ public class ModelVariable extends URIEntity {
   
   String units;
   String standard_name;
+  int relevance = 999;
 
   public ModelVariable() {}
   
@@ -15,6 +16,7 @@ public class ModelVariable extends URIEntity {
     this.setLabel(from.getLabel());
     this.units = from.getUnits();
     this.standard_name = from.getStandard_name();
+    this.relevance = from.getRelevance();
   }
   
   public String getStandard_name() {
@@ -28,5 +30,13 @@ public class ModelVariable extends URIEntity {
   }
   public void setUnits(String units) {
     this.units = units;
+  }
+
+  public int getRelevance() {
+    return relevance;
+  }
+
+  public void setRelevance(int relevance) {
+    this.relevance = relevance;
   }
 }

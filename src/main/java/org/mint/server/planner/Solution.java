@@ -63,16 +63,28 @@ public class Solution implements Comparable<Solution> {
     this.variables.add(nv);
     // Update Hashes
     String cname = this.vocabulary.getCanonicalName(nv.getVariable().getStandard_names());
-    if(cname != null)
-      this.varhash.put(cname+nv.getType(), nv);
-    else
-      this.typehash.put(nv.getType(), nv);
+    /*if(cname != null)
+      this.varhash.put(cname, nv);
+    this.typehash.put(nv.getType(), nv);*/
+    
+    this.varhash.put(cname+nv.getType(), nv);
+    this.varhash.put(cname, nv);
+    this.typehash.put(nv.getType(), nv);
   }
   
   public SolutionVariable findVariable(String iotype, String cname) {
+    /*
     if(cname != null)
-      return varhash.get(cname+iotype);
+      return varhash.get(cname);
     return typehash.get(iotype);
+    */
+    if(cname != null && iotype != null)
+      return varhash.get(cname+iotype);
+    else if(iotype != null)
+      return typehash.get(iotype);
+    else if(cname != null)
+      return varhash.get(cname);
+    return null;
   }
 
   public void copy(Solution solution) {
@@ -289,7 +301,7 @@ public class Solution implements Comparable<Solution> {
   public Workflow createModelGraph(WorkflowSolution wflow, String userid) {
     if(wflow == null)
       return null;
-    
+        
     PropertyListConfiguration props = Config.get().getProperties();
     String wingsServer = props.getString("wings.server");
     String wingsDomain = props.getString("wings.domain");
@@ -304,6 +316,7 @@ public class Solution implements Comparable<Solution> {
 
     HashMap<String, Variable> varid_hash = new HashMap<String, Variable>();
     HashMap<String, SolutionVariable> gvarid_hash = new HashMap<String, SolutionVariable>();
+    HashMap<String, String> tplvarid_hash = new HashMap<String, String>();
     HashMap<String, Port> port_hash = new HashMap<String, Port>();
     HashMap<String, Node> node_hash = new HashMap<String, Node>();
     
@@ -312,12 +325,15 @@ public class Solution implements Comparable<Solution> {
         continue;
       GVariable v = sv.getVariable();
       String varName = v.getLocalName();
+      String cname = this.vocabulary.getCanonicalName(v.getStandard_names());
       String varId = wflowNs + varName;
       Variable var = new Variable(varId, 1);
-      var.setName(v.getLabel());
+      var.setName(cname);
       tpl.addVariable(var);
       gvarid_hash.put(v.getID(), sv);
       varid_hash.put(v.getID(), var);
+      
+      tplvarid_hash.put(var.getId(), cname);
     }
     
     for(Model c : wflow.getModels()) {
@@ -341,6 +357,7 @@ public class Solution implements Comparable<Solution> {
           String portid =  node.getId() + "_in_" + roleid;
           Port port = new Port(portid);
           Role role = new Role(portid + "_role", 1);
+          role.setRelevance(mv.getRelevance());
           role.setRoleid(roleid);
           port.setRole(role);
           node.addInputPort(port);
@@ -353,6 +370,7 @@ public class Solution implements Comparable<Solution> {
           String portid = node.getId() + "_out_" + roleid;
           Port port = new Port(portid);
           Role role = new Role(portid + "_role", 1);
+          role.setRelevance(mv.getRelevance());
           role.setRoleid(roleid);
           port.setRole(role);
           node.addOutputPort(port);
@@ -393,7 +411,7 @@ public class Solution implements Comparable<Solution> {
         Node toNode = node_hash.get(l.getTo());
         Port fromPort = port_hash.get(fromNode.getId() + "_out_" + roleid);
         Port toPort = port_hash.get(toNode.getId() + "_in_" + roleid);
-        System.out.println(l.getFrom() + " -> " + l.getTo() + " : " + roleid);
+        //System.out.println(l.getFrom() + " -> " + l.getTo() + " : " + roleid);
         String linkid = fromPort.getId() + "_to_" + toNode.getLocalName() + "_in_" + roleid;
         Link link = new Link(linkid, fromNode.getId(), fromPort.getId(), 
             toNode.getId(), toPort.getId(), var.getId());
@@ -404,6 +422,93 @@ public class Solution implements Comparable<Solution> {
           var.setCategory(toNode.getCategory());
 
         tpl.addLink(link);
+      }
+    }
+    
+    // Create Input and Output links for unclaimed ports
+    for(String nid : tpl.getNodes().keySet()) {
+      Node n = tpl.getNodes().get(nid);
+      for(String portid : n.getInputPorts().keySet()) {
+        Port p = n.getInputPorts().get(portid);
+
+        String roleid = p.getRole().getRoleid();
+        int roletype = p.getRole().getType();
+        String pid = n.getId() + "_in_" + roleid;
+        String linkid = portid + "_to";
+        String fid = wflowNs + roleid;
+        
+        // Check for links to port
+        if(!this.hasLinksToPort(tpl, n.getId(), pid)) {
+          Variable v = tpl.getVariable(fid);
+          if(v == null) {
+            v = new Variable(fid, roletype);
+            tpl.addVariable(v);
+            tplvarid_hash.put(v.getId(), roleid);
+          }
+          v.setCategory(n.getCategory());
+          Link l = new Link(linkid, null, null, n.getId(), pid, fid);
+          tpl.addLink(l);
+        }
+      }
+      for(String portid : n.getOutputPorts().keySet()) {
+        Port p = n.getOutputPorts().get(portid);
+
+        String roleid = p.getRole().getRoleid();
+        String pid = n.getId() + "_out_" + roleid;
+        String linkid = portid + "_from";
+        String fid = wflowNs + roleid;
+        
+        // Check for links from port
+        if(!this.hasLinksFromPort(tpl, n.getId(), pid)) {
+          Variable v = tpl.getVariable(fid);
+          if(v == null) {
+            v = new Variable(fid, 1);
+            tpl.addVariable(v);
+            tplvarid_hash.put(v.getId(), roleid);
+          }
+          v.setCategory(n.getCategory());
+          Link l = new Link(linkid, n.getId(), pid, null, null, fid);
+          tpl.addLink(l);
+        }
+      }
+    }
+    
+    // Get orphan variables
+    HashMap<String, Variable> orphanvars = new HashMap<String, Variable>(tpl.getVariables());
+    HashMap<String, String> ios = new HashMap<String, String>();
+    HashMap<String, ArrayList<Link>> varlinks = new HashMap<String, ArrayList<Link>>();
+    for(Link l : tpl.getLinks().values()) {
+      String varid = l.getVariable().getId();
+      orphanvars.remove(varid);
+      if(l.getFromNode() == null || l.getToNode() == null) {
+        // Input variable
+        String cname = tplvarid_hash.get(varid);
+        ios.put(cname, varid);
+      }
+      if(!varlinks.containsKey(varid))
+        varlinks.put(varid, new ArrayList<Link>());
+      varlinks.get(varid).add(l);
+    }
+    for(String varid: orphanvars.keySet()) {
+      String cname = tplvarid_hash.get(varid);
+
+      // If orphan variable have same canonical name as any of the inputs
+      if(ios.containsKey(cname)) {
+        // Remove orphan variable from template
+        tpl.variables.remove(varid);
+        
+        // Rename current variable with orphan varid in template
+        /*
+        String curvarid = ios.get(cname);
+        Variable curvar = tpl.getVariable(curvarid);
+        curvar.setId(varid);
+        tpl.variables.put(varid, curvar);
+        
+        if(varlinks.containsKey(curvarid)) {
+          for(Link l : varlinks.get(curvarid)) {
+            l.getVariable().setId(varid);
+          }
+        }*/
       }
     }
     
@@ -649,6 +754,14 @@ public class Solution implements Comparable<Solution> {
           Node toNode = node_hash.get(l.getTo());
           Port fromPort = port_hash.get(fromNode.getId() + "_out_" + fromprov.getFile_id());
           Port toPort = port_hash.get(toNode.getId() + "_in_" + toprov.getFile_id());
+          
+          String fromType = port_vartype_hash.get(fromPort.getId());
+          String toType = port_vartype_hash.get(toPort.getId());
+          //System.out.println(fromType +" : " + toType);
+          // If the input and output types don't match, then this is an invalid workflow
+          if(!fromType.equals(toType))
+            return null;
+          
           String linkid = fromPort.getId() + "_to_" + toPort.getLocalName();
           Link link = new Link(linkid, fromNode.getId(), fromPort.getId(), 
               toNode.getId(), toPort.getId(), var.getId());
@@ -770,7 +883,7 @@ public class Solution implements Comparable<Solution> {
       Variable v = tpl.getVariable(link.getVariable().getId());
       if(v == null)
         return null;
-      System.out.println(link.getVariable().getId());
+      //System.out.println(link.getVariable().getId());
       if(link.getFromNode() == null) {
         String roleid = v.getId() + "_irole";
         Role role = new Role(roleid, v.getType());
